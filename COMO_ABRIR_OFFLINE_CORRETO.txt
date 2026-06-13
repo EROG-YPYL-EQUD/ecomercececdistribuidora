@@ -1,0 +1,22 @@
+COMO TESTAR OFFLINE DO JEITO CERTO
+
+Não abra direto dando dois cliques em admin.html e loja.html.
+
+Para o Admin alimentar a Loja no mesmo PC, faça assim:
+
+1. Extraia o ZIP.
+2. Entre na pasta extraída.
+3. Dê dois cliques em ABRIR_SITE_LOCAL.bat.
+4. O navegador vai abrir o Admin em:
+
+   http://localhost:8000/admin.html
+
+5. Cadastre ou altere produtos no Admin.
+6. Abra a Loja em:
+
+   http://localhost:8000/loja.html
+
+Assim o navegador usa o mesmo endereço localhost e os produtos aparecem na Loja.
+
+Senha do Admin:
+admin123

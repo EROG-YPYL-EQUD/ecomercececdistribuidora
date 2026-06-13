@@ -3379,3 +3379,57 @@ td{
   display:block;
   color:var(--muted);
 }
+
+/* Versão 75: carrinho vazio e ações corrigidas */
+.cart-empty-v75{
+  display:grid;
+  gap:10px;
+  text-align:center;
+  padding:28px 16px;
+  border:1px dashed var(--line);
+  border-radius:18px;
+  background:#fbfaf7;
+}
+.cart-empty-v75 strong{
+  color:var(--brand);
+  font-size:20px;
+}
+.cart-empty-v75 p{
+  margin:0;
+  color:var(--muted);
+}
+.cart-line-v75{
+  align-items:center;
+}
+.cart-item-info-v75 small{
+  display:block;
+  margin-top:4px;
+  color:var(--muted);
+}
+
+/* Versão 77: interface limpa e vitrine estável */
+.firebase-status-v74:not(.error),
+.firebase-online-note-v74{
+  display:none !important;
+}
+.card-clean-v77 .product-art-v77 img{
+  backface-visibility:hidden;
+  transform:translateZ(0);
+}
+.cart-empty-v77{
+  display:grid;
+  gap:10px;
+  text-align:center;
+  padding:28px 16px;
+  border:1px dashed var(--line);
+  border-radius:18px;
+  background:#fbfaf7;
+}
+.cart-empty-v77 strong{
+  color:var(--brand);
+  font-size:20px;
+}
+.cart-empty-v77 p{
+  margin:0;
+  color:var(--muted);
+}
