@@ -6065,3 +6065,73 @@ if(document.readyState === 'loading'){
   }
 })();
 
+
+
+
+/* Versão 78: menu Loja fixo, sem dropdown dinâmico e sem instabilidade */
+(function(){
+  function fixMainShopMenu78(){
+    document.querySelectorAll('.nav-dropdown').forEach(drop => {
+      const text = String(drop.textContent || '').toLowerCase();
+      const hasShop = text.includes('loja') || !!drop.querySelector('a[href*="loja"]');
+      if(!hasShop) return;
+
+      const isActive = drop.querySelector('.active') ? ' active' : '';
+      const link = document.createElement('a');
+      link.href = 'loja.html';
+      link.className = 'loja-menu-link' + isActive;
+      link.textContent = 'Loja';
+      drop.replaceWith(link);
+    });
+
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+      const parent = menu.closest('.nav-dropdown');
+      const txt = String(parent?.textContent || menu.textContent || '').toLowerCase();
+      if(txt.includes('loja') || menu.querySelector('a[href*="loja"]')){
+        if(parent){
+          const link = document.createElement('a');
+          link.href = 'loja.html';
+          link.className = parent.querySelector('.active') ? 'loja-menu-link active' : 'loja-menu-link';
+          link.textContent = 'Loja';
+          parent.replaceWith(link);
+        }else{
+          menu.remove();
+        }
+      }
+    });
+  }
+
+  // Impede funções antigas de reescrever o menu principal.
+  function noMenuRewrite78(){
+    try{
+      renderMenuCategoriesV69 = function(){};
+      renderMenuCategoriesV70 = function(){};
+      renderMenuCategoriesV72 = function(){};
+      renderMenuCategoriesV73 = function(){};
+    }catch(e){}
+  }
+
+  function bootMenu78(){
+    noMenuRewrite78();
+    fixMainShopMenu78();
+
+    // Observador leve só para impedir que algum listener antigo recrie dropdown.
+    try{
+      const obs = new MutationObserver(() => {
+        noMenuRewrite78();
+        fixMainShopMenu78();
+      });
+      obs.observe(document.getElementById('mainMenu') || document.body, {childList:true, subtree:true});
+    }catch(e){}
+
+    // Remove qualquer aviso técnico que venha de scripts antigos.
+    document.querySelectorAll('.firebase-status-v74:not(.error), .firebase-online-note-v74').forEach(el => el.remove());
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', bootMenu78);
+  }else{
+    bootMenu78();
+  }
+})();
+

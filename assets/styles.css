@@ -3433,3 +3433,18 @@ td{
   margin:0;
   color:var(--muted);
 }
+
+/* Versão 78: menu Loja simples e estável */
+.nav-dropdown:has(.dropdown-menu),
+.dropdown-menu{
+  display:none;
+}
+.loja-menu-link{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.loja-menu-link.active{
+  color:var(--brand);
+  font-weight:800;
+}
