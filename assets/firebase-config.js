@@ -24,6 +24,9 @@ window.CEC_FIREBASE_CONFIG = {
 
     window.CEC_FIREBASE_APP = firebase.app();
     window.CEC_DB = firebase.firestore();
+    if(firebase.auth){
+      window.CEC_AUTH = firebase.auth();
+    }
     window.CEC_FIREBASE_READY = true;
 
     try{

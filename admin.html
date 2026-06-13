@@ -13,19 +13,34 @@
 
   <section class="login-box" id="adminLogin">
    <h1>Acesso administrativo</h1>
-   <p class="muted-box">Senha inicial: <strong>admin123</strong>. Esta versão já está conectada ao sistema online para produtos, pedidos e configurações online.</p>
+   <p class="muted-box">Acesso pelo <strong>Firebase Authentication</strong>. Use o e-mail e senha cadastrados no Firebase.</p>
    <form id="adminLoginForm" autocomplete="off">
-    <div class="field"><label>Senha</label><input id="adminPassword" type="password" required placeholder="Digite a senha" /></div>
-    <button class="btn btn-primary" type="submit" style="width:100%">Entrar</button><p id="adminLoginError" style="display:none;color:#ff8d8d;font-weight:900;margin-top:12px;text-align:center">Senha incorreta</p>
+    <div class="field"><label>E-mail</label><input id="adminEmail" type="email" required placeholder="seu@email.com" /></div>
+    <div class="field"><label>Senha</label><input id="adminPassword" type="password" required placeholder="Digite sua senha" /></div>
+    <button class="btn btn-primary" type="submit" style="width:100%">Entrar</button>
+    <button class="btn btn-outline" id="resetAdminPasswordBtn" type="button" style="width:100%;margin-top:10px">Esqueci minha senha</button>
+    <p id="adminLoginError" style="display:none;color:#ff8d8d;font-weight:900;margin-top:12px;text-align:center"></p>
    </form>
   </section>
 
   <section class="admin-card hidden" id="adminPanel">
    <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px">
-    <div><h2 style="margin:0;color:var(--brand)">Admin C & C</h2><p style="margin:4px 0 0;color:var(--muted)">Produtos, pedidos, configurações, SEO básico e dados comerciais.</p></div>
+    <div><h2 style="margin:0;color:var(--brand)">Admin C & C</h2><p style="margin:4px 0 0;color:var(--muted)">Produtos, pedidos, configurações, SEO básico e dados comerciais.</p><small id="adminLoggedEmail" style="color:var(--muted);font-weight:800"></small></div>
     <button class="btn btn-danger" id="logoutBtn" type="button">Sair</button>
    </div>
-   <div class="notice"><strong>Online:</strong> esta versão salva produtos, pedidos e configurações online. O admin continua em <strong>admin.html</strong> e a senha inicial é <strong>admin123</strong>.</div>
+   <div class="notice"><strong>Login seguro:</strong> o Admin agora usa e-mail e senha do Firebase Authentication.</div>
+   <details class="admin-password-box-v82">
+    <summary>Alterar senha do Admin</summary>
+    <form id="changeAdminPasswordForm" autocomplete="off">
+     <div class="form-grid">
+      <div class="field"><label>Senha atual</label><input id="currentAdminPassword" type="password" required></div>
+      <div class="field"><label>Nova senha</label><input id="newAdminPassword" type="password" required minlength="6"></div>
+      <div class="field"><label>Confirmar nova senha</label><input id="confirmAdminPassword" type="password" required minlength="6"></div>
+     </div>
+     <button class="btn btn-primary" type="submit">Salvar nova senha</button>
+     <p id="changeAdminPasswordMsg" class="admin-auth-msg-v82"></p>
+    </form>
+   </details>
    <div class="admin-summary-v35">
      <div><strong>Produtos</strong><span>Cadastro completo com preço, descrição, estoque e compatibilidade.</span></div>
      <div><strong>Pedidos</strong><span>Status, visualizar, copiar dados e excluir.</span></div>
@@ -99,7 +114,7 @@
 
    <div class="admin-section hidden" id="ordersAdmin">
     <div class="orders-sync-note-v43">
-     <strong>Pedidos sincronizados online online</strong>
+     <strong>Pedidos sincronizados online</strong>
      <span>Ao alterar o status aqui, o acompanhamento pelo código é atualizado para o cliente.</span>
      <button class="btn btn-soft" id="refreshOrdersBtnV43" type="button">Atualizar pedidos</button>
     </div>
@@ -305,6 +320,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-analytics-compat.js"></script>
 <script src="assets/firebase-config.js"></script>
 <script src="assets/app.js"></script>

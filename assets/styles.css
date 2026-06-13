@@ -3515,3 +3515,83 @@ td{
 @media(max-width:760px){
   .modal-product-grid-v79{grid-template-columns:1fr}
 }
+
+/* Versão 80: imagem de produto mais rápida e sem salto visual */
+.product-art-img,
+.product-art-v79{
+  background:linear-gradient(135deg, #fbf7ea, #ffffff);
+  min-height:150px;
+}
+.product-art-img img{
+  opacity:1;
+  transition:none !important;
+  will-change:auto;
+}
+.card-clean-v79 .product-art-v79 img{
+  min-height:120px;
+}
+
+/* Versão 82: Firebase Authentication no Admin */
+.admin-password-box-v82{
+  margin:12px 0 18px;
+  padding:14px;
+  border:1px solid rgba(212,175,55,.25);
+  border-radius:18px;
+  background:rgba(255,255,255,.04);
+}
+.admin-password-box-v82 summary{
+  cursor:pointer;
+  color:var(--brand);
+  font-weight:900;
+}
+.admin-password-box-v82 form{
+  margin-top:14px;
+}
+.admin-auth-msg-v82{
+  margin:10px 0 0;
+  font-weight:900;
+  color:#ff8d8d;
+}
+.admin-auth-msg-v82.ok{
+  color:#32d583;
+}
+
+/* Versão 83: Loja abre estabilizada, sem piscar imagens */
+#productGrid.shop-grid-loading-v83{
+  min-height:360px;
+}
+#productGrid.shop-grid-loading-v83 > .product-card{
+  visibility:hidden;
+}
+.shop-loading-v83{
+  width:100%;
+  min-height:320px;
+  display:grid;
+  place-items:center;
+  text-align:center;
+  gap:8px;
+  padding:34px;
+  border:1px solid var(--line);
+  border-radius:22px;
+  background:linear-gradient(135deg,#fbf7ea,#ffffff);
+  color:var(--muted);
+}
+.shop-loading-v83 strong{
+  color:var(--brand);
+  font-size:20px;
+}
+.shop-loading-v83 span{
+  display:block;
+}
+#productGrid.shop-grid-ready-v83 > .product-card{
+  visibility:visible;
+}
+.product-art-img,
+.product-art-v79{
+  contain:layout paint;
+}
+.product-art-img img{
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  transition:none !important;
+}

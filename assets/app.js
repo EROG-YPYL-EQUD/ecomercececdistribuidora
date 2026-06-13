@@ -9,7 +9,7 @@ let CEC_PIX_KEY_DISPLAY = '37.492.135/0001-21';
 let CEC_PIX_MERCHANT_NAME = 'C&C DISTRIBUIDORA';
 let CEC_PIX_MERCHANT_CITY = 'CAMPO GRANDE';
 
-const ADMIN_PASSWORD = 'To0727131001@';
+// Admin v82 usa Firebase Authentication. A senha não fica mais fixa no app.js.
 const FB_COLLECTION = 'cec_ecommerce_online';
 
 const CEC_DEFAULT_PRODUCTS = [
@@ -91,6 +91,55 @@ let SHOP_RENDER_KEY = '';
 let CATEGORY_RENDER_KEY = '';
 let ACTIVE_CATEGORY = 'Todos';
 
+let SHOP_FIRST_STABLE_RENDER = false;
+let SHOP_WAITING_STABLE = false;
+
+function setShopLoadingState(active){
+  const grid = $('#productGrid');
+  if(!grid) return;
+  if(active){
+    grid.classList.add('shop-grid-loading-v83');
+    if(!grid.innerHTML.trim()){
+      grid.innerHTML = '<div class="shop-loading-v83"><strong>Carregando produtos...</strong><span>Aguarde um instante.</span></div>';
+    }
+  }else{
+    grid.classList.remove('shop-grid-loading-v83');
+    grid.classList.add('shop-grid-ready-v83');
+  }
+}
+
+function waitImagesStable(container, timeout=2200){
+  const imgs = Array.from(container.querySelectorAll('img'));
+  if(!imgs.length) return Promise.resolve();
+
+  const promises = imgs.map(img => new Promise(resolve => {
+    if(img.complete && img.naturalWidth > 0) return resolve();
+    let done = false;
+    const finish = () => {
+      if(done) return;
+      done = true;
+      resolve();
+    };
+    img.addEventListener('load', finish, {once:true});
+    img.addEventListener('error', finish, {once:true});
+    setTimeout(finish, timeout);
+  }));
+
+  return Promise.all(promises);
+}
+
+function revealShopWhenStable(){
+  const grid = $('#productGrid');
+  if(!grid || SHOP_WAITING_STABLE) return;
+  SHOP_WAITING_STABLE = true;
+
+  waitImagesStable(grid).then(() => {
+    SHOP_FIRST_STABLE_RENDER = true;
+    SHOP_WAITING_STABLE = false;
+    setShopLoadingState(false);
+  });
+}
+
 function db(){
   return window.CEC_DB || null;
 }
@@ -156,6 +205,8 @@ function subscribeFirebase(){
     if(JSON.stringify(items) === JSON.stringify(PRODUCTS)) return;
     PRODUCTS = items;
     writeJson('cec_products', PRODUCTS);
+    preloadProductImages();
+    SHOP_RENDER_KEY = '';
     renderAllProducts();
   }, err => console.error('Produtos Firebase:', err));
 
@@ -262,6 +313,80 @@ function productImage(product){
   if(product.image && String(product.image).trim()) return product.image;
   return defaultImageForCategory(product.category);
 }
+
+const PRELOADED_IMAGES = new Set();
+const IMAGE_OPTIMIZE_STATE = {running:false, done:false};
+
+function preloadProductImages(){
+  loadProducts().forEach(product => {
+    const src = productImage(product);
+    if(!src || PRELOADED_IMAGES.has(src)) return;
+    PRELOADED_IMAGES.add(src);
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = src;
+  });
+}
+
+function compressDataUrlForStore(dataUrl, max=420, quality=0.66){
+  return new Promise(resolve => {
+    if(!dataUrl || !String(dataUrl).startsWith('data:image/')) return resolve(dataUrl);
+    const img = new Image();
+    img.onload = () => {
+      try{
+        let width = img.width || max;
+        let height = img.height || max;
+        if(width > max || height > max){
+          const ratio = Math.min(max / width, max / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      }catch(e){
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+async function optimizeLargeProductImages(){
+  if(IMAGE_OPTIMIZE_STATE.running || IMAGE_OPTIMIZE_STATE.done) return;
+  const products = loadProducts();
+  const big = products.filter(p => p && p.imageData && String(p.imageData).length > 180000);
+  if(!big.length){
+    IMAGE_OPTIMIZE_STATE.done = true;
+    return;
+  }
+
+  IMAGE_OPTIMIZE_STATE.running = true;
+  let changed = false;
+  for(const product of products){
+    if(product.imageData && String(product.imageData).length > 180000){
+      const compressed = await compressDataUrlForStore(product.imageData);
+      if(compressed && compressed.length < String(product.imageData).length){
+        product.imageData = compressed;
+        changed = true;
+      }
+    }
+  }
+  IMAGE_OPTIMIZE_STATE.running = false;
+  IMAGE_OPTIMIZE_STATE.done = true;
+
+  if(changed){
+    PRODUCTS = products;
+    writeJson('cec_products', PRODUCTS);
+    saveDoc('produtos', {items: PRODUCTS});
+    SHOP_RENDER_KEY = '';
+    renderShopProducts();
+    preloadProductImages();
+  }
+}
 function normalizeCategory(value){
   return String(value || '').trim() || 'Outros';
 }
@@ -302,7 +427,7 @@ function shopCard(product){
       <div class="card-image-v67 card-image-v73">
         <div class="product-art product-art-img product-art-v79">
           <span class="badge">${esc(product.tag || product.category || 'Produto')}</span>
-          <img src="${esc(src)}" alt="${esc(product.name || 'Produto')}" loading="lazy" decoding="async"
+          <img src="${esc(src)}" alt="${esc(product.name || 'Produto')}" loading="eager" decoding="async" fetchpriority="high"
                onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='${esc(fallback)}';}else{this.style.display='none';this.nextElementSibling.style.display='grid';}">
           <span class="fallback-icon">${productIcon(product.category)}</span>
         </div>
@@ -324,6 +449,8 @@ function renderShopProducts(){
   const grid = $('#productGrid');
   if(!grid) return;
 
+  if(!SHOP_FIRST_STABLE_RENDER) setShopLoadingState(true);
+
   renderCategories();
   const list = filteredProducts();
   const resultLabel = `${list.length} produto(s)`;
@@ -335,12 +462,17 @@ function renderShopProducts(){
     category: ACTIVE_CATEGORY,
     products: list.map(p => ({id:p.id,name:p.name,cat:p.category,price:p.price,tag:p.tag,stock:p.stock,img:productImage(p)}))
   });
-  if(SHOP_RENDER_KEY === key) return;
+  if(SHOP_RENDER_KEY === key){
+    revealShopWhenStable();
+    return;
+  }
   SHOP_RENDER_KEY = key;
 
   grid.innerHTML = list.length
     ? list.map(shopCard).join('')
     : '<div class="muted-box">Nenhum produto encontrado. Limpe a busca ou escolha outra categoria.</div>';
+  preloadProductImages();
+  revealShopWhenStable();
 }
 function renderAllProducts(){
   renderShopProducts();
@@ -712,9 +844,30 @@ function setupCheckout(){
   }
 }
 
-function showAdminPanel(){
+
+function adminAuth(){
+  if(window.CEC_AUTH) return window.CEC_AUTH;
+  try{
+    if(typeof firebase !== 'undefined' && firebase.auth) return firebase.auth();
+  }catch(e){}
+  return null;
+}
+function authMessage(error){
+  const code = error && error.code ? String(error.code) : '';
+  if(code.includes('user-not-found')) return 'Usuário não encontrado no Firebase.';
+  if(code.includes('wrong-password') || code.includes('invalid-credential')) return 'E-mail ou senha incorretos.';
+  if(code.includes('invalid-email')) return 'E-mail inválido.';
+  if(code.includes('too-many-requests')) return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
+  if(code.includes('network')) return 'Falha de internet. Tente novamente.';
+  if(code.includes('requires-recent-login')) return 'Por segurança, saia e entre novamente antes de alterar a senha.';
+  if(code.includes('weak-password')) return 'A nova senha precisa ter pelo menos 6 caracteres.';
+  return error && error.message ? error.message : 'Não foi possível concluir a operação.';
+}
+function showAdminPanel(user){
   $('#adminLogin')?.classList.add('hidden');
   $('#adminPanel')?.classList.remove('hidden');
+  const emailEl = $('#adminLoggedEmail');
+  if(emailEl) emailEl.textContent = user && user.email ? 'Logado como: ' + user.email : '';
   renderAdminProducts();
   renderAdminOrders();
   fillSiteConfigForm();
@@ -726,24 +879,112 @@ function showAdminLogin(){
 function setupAdmin(){
   if(!$('#adminLoginForm')) return;
 
-  if(sessionStorage.getItem('cec_admin_logged') === '1') showAdminPanel();
-  else showAdminLogin();
+  const auth = adminAuth();
+  const errorEl = $('#adminLoginError');
 
-  $('#adminLoginForm')?.addEventListener('submit', e => {
+  function setLoginError(message){
+    if(errorEl){
+      errorEl.textContent = message || '';
+      errorEl.style.display = message ? 'block' : 'none';
+    }
+  }
+
+  if(!auth){
+    showAdminLogin();
+    setLoginError('Firebase Authentication não carregou. Confira se o arquivo assets/firebase-config.js subiu e se o script firebase-auth-compat.js está no admin.html.');
+  }else{
+    auth.onAuthStateChanged(user => {
+      if(user) showAdminPanel(user);
+      else showAdminLogin();
+    });
+  }
+
+  $('#adminLoginForm')?.addEventListener('submit', async e => {
     e.preventDefault();
-    const pass = $('#adminPassword')?.value.trim() || '';
-    if(pass === ADMIN_PASSWORD){
-      sessionStorage.setItem('cec_admin_logged','1');
-      $('#adminLoginError') && ($('#adminLoginError').style.display = 'none');
-      showAdminPanel();
-    }else{
-      $('#adminLoginError') && ($('#adminLoginError').style.display = 'block');
+    setLoginError('');
+    const email = $('#adminEmail')?.value.trim() || '';
+    const pass = $('#adminPassword')?.value || '';
+
+    if(!auth){
+      setLoginError('Firebase Authentication não está disponível.');
+      return;
+    }
+
+    try{
+      await auth.signInWithEmailAndPassword(email, pass);
+      $('#adminPassword') && ($('#adminPassword').value = '');
+      setLoginError('');
+      toast('Login realizado.');
+    }catch(err){
+      setLoginError(authMessage(err));
     }
   });
 
-  $('#logoutBtn')?.addEventListener('click', () => {
-    sessionStorage.removeItem('cec_admin_logged');
-    showAdminLogin();
+  $('#resetAdminPasswordBtn')?.addEventListener('click', async () => {
+    setLoginError('');
+    const email = $('#adminEmail')?.value.trim() || '';
+    if(!email){
+      setLoginError('Digite seu e-mail para receber o link de redefinição.');
+      return;
+    }
+    if(!auth){
+      setLoginError('Firebase Authentication não está disponível.');
+      return;
+    }
+    try{
+      await auth.sendPasswordResetEmail(email);
+      setLoginError('Enviamos um link de redefinição para o e-mail informado.');
+    }catch(err){
+      setLoginError(authMessage(err));
+    }
+  });
+
+  $('#logoutBtn')?.addEventListener('click', async () => {
+    try{
+      await auth?.signOut();
+      sessionStorage.removeItem('cec_admin_logged');
+      showAdminLogin();
+    }catch(e){
+      showAdminLogin();
+    }
+  });
+
+  $('#changeAdminPasswordForm')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const msg = $('#changeAdminPasswordMsg');
+    const current = $('#currentAdminPassword')?.value || '';
+    const next = $('#newAdminPassword')?.value || '';
+    const confirm = $('#confirmAdminPassword')?.value || '';
+    if(msg){
+      msg.textContent = '';
+      msg.className = 'admin-auth-msg-v82';
+    }
+
+    if(!auth?.currentUser){
+      if(msg) msg.textContent = 'Você precisa estar logado.';
+      return;
+    }
+    if(next !== confirm){
+      if(msg) msg.textContent = 'A confirmação da nova senha não confere.';
+      return;
+    }
+
+    try{
+      const user = auth.currentUser;
+      const credential = firebase.auth.EmailAuthProvider.credential(user.email, current);
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(next);
+      $('#currentAdminPassword') && ($('#currentAdminPassword').value = '');
+      $('#newAdminPassword') && ($('#newAdminPassword').value = '');
+      $('#confirmAdminPassword') && ($('#confirmAdminPassword').value = '');
+      if(msg){
+        msg.textContent = 'Senha alterada com sucesso.';
+        msg.classList.add('ok');
+      }
+      toast('Senha alterada.');
+    }catch(err){
+      if(msg) msg.textContent = authMessage(err);
+    }
   });
 
   $$('.tab').forEach(tab => {
@@ -760,6 +1001,7 @@ function setupAdmin(){
   setupSiteConfigAdmin();
   setupBackupAdmin();
 }
+
 function productFromForm(){
   const id = $('#prodId')?.value || Date.now();
   return {
@@ -826,7 +1068,7 @@ async function resizeImageFile(file){
       const img = new Image();
       img.onerror = reject;
       img.onload = () => {
-        const max = 700;
+        const max = 420;
         let {width, height} = img;
         if(width > max || height > max){
           const ratio = Math.min(max / width, max / height);
@@ -836,7 +1078,7 @@ async function resizeImageFile(file){
         const canvas = document.createElement('canvas');
         canvas.width = width; canvas.height = height;
         canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.78));
+        resolve(canvas.toDataURL('image/jpeg', 0.66));
       };
       img.src = reader.result;
     };
@@ -1144,7 +1386,9 @@ function boot(){
   applySiteConfig();
   setupMenu();
   setupModals();
+  if($('#productGrid')) setShopLoadingState(true);
   setupShop();
+  preloadProductImages();
   setupCart();
   setupCheckout();
   setupAdmin();

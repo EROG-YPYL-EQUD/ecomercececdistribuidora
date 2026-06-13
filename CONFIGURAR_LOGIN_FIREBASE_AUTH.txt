@@ -1,0 +1,39 @@
+CONFIGURAR LOGIN DO ADMIN PELO FIREBASE AUTHENTICATION
+
+Esta versão remove a senha fixa do app.js.
+O Admin agora entra com e-mail e senha do Firebase.
+
+PASSO 1
+Firebase Console -> Authentication -> Sign-in method
+Ative o provedor:
+Email/Password
+
+PASSO 2
+Firebase Console -> Authentication -> Users -> Add user
+Crie um usuário para o Admin.
+
+Sugestão:
+Email: vendas@cecvendas.com
+Senha: To0727131001@
+
+Você pode usar outro e-mail, porque a tela do Admin agora pede e-mail e senha.
+
+PASSO 3
+Suba esta versão no GitHub e aguarde o Vercel ficar Ready.
+
+PASSO 4
+Entre em:
+/admin.html
+
+Use:
+E-mail criado no Firebase
+Senha criada no Firebase
+
+ALTERAR SENHA
+Você pode alterar de 2 formas:
+1) Pelo próprio Admin, em "Alterar senha do Admin".
+2) Pelo Firebase Console -> Authentication -> Users -> selecionar usuário -> Reset password / editar usuário.
+
+IMPORTANTE
+As regras atuais do Firestore continuam permitindo leitura/escrita para o site funcionar.
+Depois podemos fazer uma versão com estrutura de pedidos separada e regras 100% travadas por usuário.
