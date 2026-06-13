@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="360" viewBox="0 0 520 360" role="img" aria-label="Fotocondutor">
+  <rect width="520" height="360" rx="28" fill="#f6f3ec"/>
+  <circle cx="410" cy="250" r="95" fill="#17684f" opacity="0.10"/>
+  <g filter="url(#shadow)">
+    <rect x="120" y="123" width="280" height="114" rx="30" fill="#fff" stroke="#ded8cc" stroke-width="4"/>
+    <circle cx="183" cy="180" r="34" fill="#0e3b2f"/>
+    <circle cx="183" cy="180" r="18" fill="#f6f3ec"/>
+    <rect x="235" y="154" width="122" height="52" rx="26" fill="#17684f"/>
+    <rect x="255" y="170" width="82" height="20" rx="10" fill="#fff" opacity="0.2"/>
+  </g>
+  <defs><filter id="shadow"><feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#0b2a23" flood-opacity=".14"/></filter></defs>
+</svg>

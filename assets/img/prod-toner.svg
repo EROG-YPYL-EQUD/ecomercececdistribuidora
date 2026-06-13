@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="360" viewBox="0 0 520 360" role="img" aria-label="Toner">
+  <rect width="520" height="360" rx="28" fill="#f6f3ec"/>
+  <circle cx="420" cy="80" r="86" fill="#c8a24a" opacity="0.16"/>
+  <g filter="url(#shadow)">
+    <rect x="115" y="105" width="290" height="150" rx="26" fill="#0e3b2f"/>
+    <rect x="148" y="139" width="224" height="30" rx="15" fill="#fff" opacity="0.18"/>
+    <rect x="148" y="188" width="150" height="24" rx="12" fill="#fff" opacity="0.13"/>
+    <circle cx="386" cy="180" r="34" fill="#17684f"/>
+  </g>
+  <defs><filter id="shadow"><feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#0b2a23" flood-opacity=".18"/></filter></defs>
+</svg>

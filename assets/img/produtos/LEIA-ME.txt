@@ -1,0 +1,2 @@
+Coloque aqui as imagens dos produtos. No Admin use o caminho: assets/img/produtos/nome-da-imagem.jpg
+Neste site estático o navegador não consegue copiar a imagem sozinho para esta pasta. Ele salva apenas o caminho.

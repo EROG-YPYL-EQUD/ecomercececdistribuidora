@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="360" viewBox="0 0 520 360" role="img" aria-label="Cartucho">
+  <rect width="520" height="360" rx="28" fill="#f6f3ec"/>
+  <circle cx="118" cy="80" r="85" fill="#17684f" opacity="0.10"/>
+  <g filter="url(#shadow)">
+    <rect x="168" y="76" width="184" height="222" rx="32" fill="#fff" stroke="#ded8cc" stroke-width="4"/>
+    <rect x="204" y="119" width="112" height="112" rx="18" fill="#0e3b2f"/>
+    <rect x="217" y="136" width="86" height="22" rx="8" fill="#ffffff" opacity="0.88"/>
+    <rect x="217" y="172" width="26" height="40" rx="8" fill="#c8a24a"/>
+    <rect x="247" y="172" width="26" height="40" rx="8" fill="#17684f"/>
+    <rect x="277" y="172" width="26" height="40" rx="8" fill="#0b2a23"/>
+  </g>
+  <defs><filter id="shadow"><feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#0b2a23" flood-opacity=".14"/></filter></defs>
+</svg>

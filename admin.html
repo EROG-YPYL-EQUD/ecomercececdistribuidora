@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <meta name="robots" content="noindex,nofollow" />
+ <title>Painel Restrito | C & C Distribuidora</title>
+ <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="admin-page">
+ <div class="admin-shell">
+  <div class="admin-head"><div class="admin-title-brand"><img src="assets/img/logo-cec-dourado.png" alt="Logo C & C Distribuidora"><div><h1>Painel Restrito</h1><p>Admin separado do site público. Esta página não aparece no menu.</p></div></div><a class="btn btn-outline" href="index.html">Voltar ao site</a></div>
+
+  <section class="login-box" id="adminLogin">
+   <h1>Acesso administrativo</h1>
+   <p class="muted-box">Senha inicial: <strong>admin123</strong>. Troque depois no arquivo <strong>assets/app.js</strong> ou conecte ao Firebase para login seguro.</p>
+   <form id="adminLoginForm" autocomplete="off">
+    <div class="field"><label>Senha</label><input id="adminPassword" type="password" required placeholder="Digite a senha" /></div>
+    <button class="btn btn-primary" type="submit" style="width:100%">Entrar</button><p id="adminLoginError" style="display:none;color:#ff8d8d;font-weight:900;margin-top:12px;text-align:center">Senha incorreta</p>
+   </form>
+  </section>
+
+  <section class="admin-card hidden" id="adminPanel">
+   <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+    <div><h2 style="margin:0;color:var(--brand)">Admin C & C</h2><p style="margin:4px 0 0;color:var(--muted)">Produtos, pedidos, configurações, SEO básico e dados comerciais.</p></div>
+    <button class="btn btn-danger" id="logoutBtn" type="button">Sair</button>
+   </div>
+   <div class="notice"><strong>Atenção:</strong> separar o admin em <strong>admin.html</strong> evita aparecer para o cliente, mas não é segurança real. Para e-commerce profissional com pedidos online para você acompanhar de qualquer computador, precisa banco de dados e autenticação, como Firebase ou Supabase.</div>
+   <div class="admin-summary-v35">
+     <div><strong>Produtos</strong><span>Cadastro completo com preço, descrição, estoque e compatibilidade.</span></div>
+     <div><strong>Pedidos</strong><span>Status, visualizar, copiar dados e excluir.</span></div>
+     <div><strong>Configurações</strong><span>Contatos, Pix, textos, endereço e SEO básico.</span></div>
+   </div>
+   <div class="admin-tabs"><button class="tab active" data-tab="productsAdmin" type="button">Produtos</button><button class="tab" data-tab="ordersAdmin" type="button">Pedidos</button><button class="tab" data-tab="siteConfigAdmin" type="button">Configurações do Site</button><button class="tab" data-tab="backupAdmin" type="button">Backup</button></div>
+
+   <div class="admin-section" id="productsAdmin">
+    <div class="admin-grid admin-grid-products-v47">
+     <div class="card admin-form-card-v47">
+      <div class="section-head-v47"><h3 id="productFormTitle">Cadastrar produto</h3><p>Preencha os dados do item e salve para atualizar a loja local.</p></div><p class="image-static-note-v44"><strong>Imagem offline:</strong> o sistema salva uma prévia leve da imagem dentro do cadastro do produto.</p><p class="image-path-note-v36">Imagens: salve o caminho no produto. Exemplo: <strong>assets/img/produtos/toner-brother.jpg</strong></p>
+      <form id="productForm" class="product-form-v30" novalidate onsubmit="return saveProductFormV40(event)">
+       <input type="hidden" id="prodId" />
+
+       <h4>Informações principais</h4>
+       <div class="form-grid">
+        <div class="field full"><label>Nome do produto *</label><input id="prodName" required placeholder="Ex.: Toner Brother TN-B021 Compatível" /></div>
+        <div class="field"><label>Categoria *</label><input id="prodCat" required placeholder="Cartucho, Toner, Fotocondutor" /></div>
+        <div class="field"><label>Tipo</label><select id="prodType"><option value="Compatível">Compatível</option><option value="Original">Original</option><option value="Remanufaturado">Remanufaturado</option><option value="Sob consulta">Sob consulta</option></select></div>
+        <div class="field"><label>Marca</label><input id="prodBrand" placeholder="HP, Brother, Samsung, Canon..." /></div>
+        <div class="field"><label>Código / SKU</label><input id="prodSku" placeholder="TN-B021, HP 664XL, D204..." /></div>
+        <div class="field"><label>Cor</label><input id="prodColor" placeholder="Preto, Ciano, Magenta, Amarelo..." /></div>
+        <div class="field"><label>Preço *</label><input id="prodPrice" required placeholder="120,00" /></div>
+        <div class="field"><label>Estoque</label><input id="prodStock" type="number" min="0" placeholder="0" /></div>
+        <div class="field"><label>Etiqueta</label><input id="prodTag" placeholder="Destaque, HP 664XL..." /></div>
+        <div class="field"><label>Rendimento</label><input id="prodYield" placeholder="Ex.: até 2.600 páginas" /></div>
+        <div class="field full product-image-path-v36">
+         <label>Imagem do produto</label>
+         <input id="prodImage" placeholder="assets/img/produtos/nome-da-imagem.jpg ou URL da imagem" />
+         <input id="prodImageData" type="hidden" />
+         <div class="image-tools-v36">
+          <label class="btn btn-outline" for="prodImageFile">Escolher imagem</label>
+          <input id="prodImageFile" type="file" accept="image/*" style="display:none">
+          <button class="btn btn-soft" id="previewProductImageBtn" type="button">Pré-visualizar</button>
+          <button class="btn btn-outline" id="clearProductImageBtn" type="button">Remover imagem</button>
+         </div>
+         <small class="path-hint">
+          Escolha uma imagem para salvar no cadastro. Ela aparecerá na vitrine e no modal Ver.
+         </small>
+         <div class="product-image-preview-v36" id="prodImagePreviewBox" style="display:none">
+          <img id="prodImagePreview" alt="Prévia da imagem do produto">
+          <span id="prodImagePreviewPath"></span>
+         </div>
+        </div>
+       </div>
+
+       <h4>Descrição e compatibilidade</h4>
+       <div class="field"><label>Descrição</label><textarea id="prodDesc" placeholder="Descrição do produto, qualidade, uso e informações comerciais"></textarea></div>
+       <div class="field"><label>Impressoras compatíveis</label><textarea id="prodPrinters" placeholder="Ex.: Brother HL-B2080DW, DCP-B7535DW, DCP-B7520DW..."></textarea></div>
+       <div class="field"><label>Observações</label><textarea id="prodNotes" placeholder="Ex.: confirmar compatibilidade antes da compra, produto sob consulta, garantia..."></textarea></div>
+
+       <div class="product-save-status-v40" id="productSaveStatusV40" style="display:none"></div><div class="actions"><button class="btn btn-primary" id="saveProductBtnV40" type="submit">Salvar produto</button><button class="btn btn-outline" id="clearProductForm" type="button">Limpar</button></div>
+      </form>
+     </div>
+     <div class="table-panel-v47">
+      <div class="admin-shop-sync-v48">
+       <button class="btn btn-primary" id="openShopWithProductsV48" type="button">Abrir Loja com produtos do Admin</button>
+       <button class="btn btn-outline" id="copyShopProductsLinkV48" type="button">Copiar link da Loja com produtos</button>
+       <small>Use estes botões quando estiver testando offline/VS Code para garantir que a Loja receba os produtos do Admin.</small>
+      </div>
+      <div class="table-panel-head-v47">
+       <div>
+        <h3>Produtos cadastrados</h3>
+        <p>Visual compacto para consultar, editar e excluir sem poluir a tela.</p>
+       </div>
+      </div>
+      <div class="table-wrap product-table-wrap-v47"><table><thead><tr><th>Produto</th><th>Categoria</th><th>Compatibilidade</th><th>Preço</th><th>Estoque</th><th>Ações</th></tr></thead><tbody id="productsBody"></tbody></table></div>
+     </div>
+    </div>
+   </div>
+
+   <div class="admin-section hidden" id="ordersAdmin">
+    <div class="orders-sync-note-v43">
+     <strong>Pedidos sincronizados neste navegador</strong>
+     <span>Ao alterar o status aqui, o acompanhamento pelo código é atualizado no mesmo navegador.</span>
+     <button class="btn btn-soft" id="refreshOrdersBtnV43" type="button">Atualizar pedidos</button>
+    </div>
+    <div class="admin-grid">
+     <div class="card">
+      <h3>Cadastrar pedido manual</h3>
+      <p style="color:var(--muted)">Use quando o cliente pedir por telefone/WhatsApp e você quiser registrar no painel.</p>
+      <form id="manualOrderForm">
+       <div class="field"><label>Cliente</label><input id="manualName" required /></div>
+       <div class="field"><label>Telefone</label><input id="manualPhone" /></div>
+       <div class="field"><label>Total</label><input id="manualTotal" required placeholder="120,00" /></div>
+       <div class="field"><label>Observação</label><textarea id="manualNote"></textarea></div>
+       <button class="btn btn-primary" type="submit">Salvar pedido</button>
+      </form>
+     </div>
+     <div class="table-wrap"><table><thead><tr><th>Código</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Pagamento</th><th>Status</th><th>Ações</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+    </div>
+   </div>
+
+   <div class="admin-section hidden" id="siteConfigAdmin">
+    <div class="notice"><strong>Configurações do Site:</strong> edite textos, contatos, Pix e SEO básico usados pelo site.</div>
+    <form id="siteConfigForm" class="card site-config-form-v29">
+      <h3>Dados da empresa</h3>
+      <div class="form-grid">
+        <div class="field"><label>Nome da empresa</label><input name="companyName"></div>
+        <div class="field"><label>Slogan</label><input name="slogan"></div>
+        <div class="field full"><label>Descrição curta</label><textarea name="shortDescription"></textarea></div>
+        <div class="field full"><label>Texto institucional da página inicial</label><textarea name="institutionalText" rows="6"></textarea></div>
+      </div>
+
+      <h3>Contatos</h3>
+      <div class="form-grid">
+        <div class="field"><label>E-mail vendas</label><input name="emailSales"></div>
+        <div class="field"><label>E-mail garantia</label><input name="emailWarranty"></div>
+        <div class="field"><label>WhatsApp principal somente números</label><input name="whatsappMain"></div>
+        <div class="field"><label>WhatsApp principal exibido</label><input name="whatsappMainDisplay"></div>
+        <div class="field"><label>Atendimento somente números</label><input name="whatsappSupport"></div>
+        <div class="field"><label>Atendimento exibido</label><input name="whatsappSupportDisplay"></div>
+      </div>
+
+      <h3>Endereço e funcionamento</h3>
+      <div class="form-grid">
+        <div class="field"><label>Endereço linha 1</label><input name="addressLine1"></div>
+        <div class="field"><label>Endereço linha 2</label><input name="addressLine2"></div>
+        <div class="field"><label>Cidade/Estado/País</label><input name="cityStateCountry"></div>
+        <div class="field"><label>CNPJ</label><input name="cnpj"></div>
+        <div class="field"><label>Horário semana</label><input name="hoursWeek"></div>
+        <div class="field"><label>Sábado</label><input name="hoursSaturday"></div>
+        <div class="field"><label>Domingo</label><input name="hoursSunday"></div>
+      </div>
+
+      <h3>Pix</h3>
+      <div class="form-grid">
+        <div class="field"><label>Chave Pix</label><input name="pixKey"></div>
+        <div class="field"><label>Chave Pix exibida</label><input name="pixKeyDisplay"></div>
+        <div class="field"><label>Nome do recebedor</label><input name="pixMerchantName"></div>
+        <div class="field"><label>Cidade Pix</label><input name="pixMerchantCity"></div>
+      </div>
+
+      <h3>Textos das páginas</h3>
+      <div class="form-grid">
+        <div class="field full"><label>Política de entrega</label><textarea name="deliveryPolicy" rows="5"></textarea></div>
+        <div class="field full"><label>Política de trocas/devoluções</label><textarea name="returnPolicy" rows="5"></textarea></div>
+      </div>
+
+      <h3>SEO básico</h3>
+      <div class="form-grid">
+        <div class="field full"><label>Título do Google</label><input name="seoTitle"></div>
+        <div class="field full"><label>Descrição do Google</label><textarea name="seoDescription"></textarea></div>
+        <div class="field full"><label>Palavras e frases de busca</label><textarea name="seoKeywords" placeholder="Ex.: toner Campo Grande, cartucho HP Campo Grande, fotocondutor Brother, suprimentos de impressão MS"></textarea></div>
+      </div>
+
+      <div class="actions" style="margin-top:18px">
+        <button class="btn btn-primary" type="submit">Salvar configurações</button>
+        <button class="btn btn-outline" id="resetSiteConfigBtn" type="button">Restaurar padrão</button>
+        <button class="btn btn-soft" id="exportSiteConfigBtn" type="button">Exportar configurações</button>
+        <label class="btn btn-outline" for="importSiteConfigInput">Importar configurações</label>
+        <input id="importSiteConfigInput" type="file" accept="application/json" style="display:none">
+      </div>
+    </form>
+   </div>
+
+   
+<div class="admin-section hidden" id="backupAdmin">
+    <div class="backup-grid-v38">
+     <div class="card backup-card-v38">
+      <div class="backup-icon-v38">⬇</div>
+      <h3>Exportar backup</h3>
+      <p>Baixe um arquivo com <strong>produtos</strong>, <strong>pedidos</strong> e <strong>configurações</strong> salvos neste navegador.</p>
+      <button class="btn btn-primary" id="exportDataBtn" type="button">Baixar backup</button>
+     </div>
+
+     <div class="card backup-card-v38">
+      <div class="backup-icon-v38">⬆</div>
+      <h3>Importar backup</h3>
+      <p>Restaure produtos, pedidos e configurações a partir de um arquivo JSON do sistema.</p>
+
+      <div class="backup-upload-v38">
+       <input id="importDataInput" type="file" accept="application/json" hidden />
+       <button class="btn btn-outline" id="importDataBtnV37" type="button">Selecionar backup</button>
+       <span class="backup-file-name-v38" id="importDataFileName">Nenhum arquivo selecionado</span>
+      </div>
+
+      <small class="backup-help-v38">Formato aceito: <strong>.json</strong></small>
+     </div>
+
+     <div class="card backup-card-v38">
+      <div class="backup-icon-v38">↺</div>
+      <h3>Restaurar produtos</h3>
+      <p>Volte para a lista inicial de produtos demonstrativos do sistema.</p>
+      <button class="btn btn-soft" id="resetProductsBtn" type="button">Restaurar produtos</button>
+     </div>
+    </div>
+   </div>
+  </section>
+ </div>
+ <div class="toast" id="toast"></div>
+ 
+<script>
+(function(){
+  const ADMIN_PASSWORD_FALLBACK = 'admin123';
+
+  function qs(sel){ return document.querySelector(sel); }
+  function qsa(sel){ return Array.from(document.querySelectorAll(sel)); }
+
+  function adminShowPanel(){
+    const login = qs('#adminLogin');
+    const panel = qs('#adminPanel');
+    if(login) login.classList.add('hidden');
+    if(panel) panel.classList.remove('hidden');
+
+    try{ if(typeof renderAdminProducts === 'function') renderAdminProducts(); }catch(e){ console.warn(e); }
+    try{ if(typeof renderAdminOrders === 'function') renderAdminOrders(); }catch(e){ console.warn(e); }
+    try{ if(typeof renderAdminConfig === 'function') renderAdminConfig(); }catch(e){ console.warn(e); }
+  }
+
+  function adminShowLogin(){
+    const login = qs('#adminLogin');
+    const panel = qs('#adminPanel');
+    if(panel) panel.classList.add('hidden');
+    if(login) login.classList.remove('hidden');
+  }
+
+  window.adminShowPanel = adminShowPanel;
+  window.adminShowLogin = adminShowLogin;
+
+  function bindAdminLoginFallback(){
+    const form = qs('#adminLoginForm');
+    const input = qs('#adminPassword');
+    const error = qs('#adminLoginError');
+
+    if(sessionStorage.getItem('cec_admin_logged') === '1'){
+      adminShowPanel();
+    }else{
+      adminShowLogin();
+    }
+
+    if(form && !form.dataset.fallbackBound){
+      form.dataset.fallbackBound = '1';
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        const pass = (input && input.value ? input.value : '').trim();
+        if(pass === ADMIN_PASSWORD_FALLBACK){
+          sessionStorage.setItem('cec_admin_logged','1');
+          if(error) error.style.display = 'none';
+          adminShowPanel();
+        }else{
+          if(error) error.style.display = 'block';
+          alert('Senha incorreta');
+        }
+      });
+    }
+
+    const logout = qs('#logoutBtn');
+    if(logout && !logout.dataset.fallbackBound){
+      logout.dataset.fallbackBound = '1';
+      logout.addEventListener('click', function(){
+        sessionStorage.removeItem('cec_admin_logged');
+        adminShowLogin();
+      });
+    }
+
+    qsa('.tab').forEach(function(tab){
+      if(tab.dataset.fallbackBound) return;
+      tab.dataset.fallbackBound = '1';
+      tab.addEventListener('click', function(){
+        qsa('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        qsa('.admin-section').forEach(s => s.classList.add('hidden'));
+        const target = qs('#' + tab.dataset.tab);
+        if(target) target.classList.remove('hidden');
+      });
+    });
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', bindAdminLoginFallback);
+  }else{
+    bindAdminLoginFallback();
+  }
+})();
+</script>
+
+<script src="assets/app.js"></script>
+
+<script>
+/* ADMIN_ORDERS_FALLBACK_V35 */
+(function(){
+  function loadOrdersFallback(){
+    try{ return JSON.parse(localStorage.getItem('cec_orders')) || []; }catch(e){ return []; }
+  }
+  function saveOrdersFallback(orders){
+    localStorage.setItem('cec_orders', JSON.stringify(orders));
+  }
+  document.addEventListener('click', function(e){
+    const del = e.target.closest('[data-delete-order]');
+    if(!del) return;
+    const code = del.dataset.deleteOrder;
+    const orders = loadOrdersFallback();
+    const order = orders.find(o => o.code === code);
+    const cliente = order && order.customer ? ' de ' + order.customer : '';
+    if(confirm('Excluir o pedido ' + code + cliente + '?')){
+      saveOrdersFallback(orders.filter(o => o.code !== code));
+      if(typeof renderAdminOrders === 'function') renderAdminOrders();
+      else location.reload();
+    }
+  });
+})();
+</script>
+
+
+<script>
+/* ADMIN_BACKUP_FALLBACK_V37 */
+(function(){
+  function getJson(key, fallback){
+    try{ return JSON.parse(localStorage.getItem(key)) || fallback; }catch(e){ return fallback; }
+  }
+  function downloadJson(filename, data){
+    var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 500);
+  }
+  document.addEventListener('click', function(e){
+    var exportBtn = e.target.closest('#exportDataBtn');
+    var resetBtn = e.target.closest('#resetProductsBtn');
+    var importBtn = e.target.closest('#importDataBtnV37');
+
+    if(exportBtn){
+      e.preventDefault();
+      downloadJson('backup-cec-distribuidora.json', {
+        products: getJson('cec_products', []),
+        orders: getJson('cec_orders', []),
+        siteConfig: getJson('cec_site_config', {}),
+        exportedAt: new Date().toISOString(),
+        system: 'C & C Distribuidora'
+      });
+    }
+
+    if(resetBtn){
+      e.preventDefault();
+      if(confirm('Restaurar produtos iniciais? Isso substitui a lista atual de produtos.')){
+        if(typeof CEC_DEFAULT_PRODUCTS !== 'undefined'){
+          localStorage.setItem('cec_products', JSON.stringify(CEC_DEFAULT_PRODUCTS));
+          if(typeof renderAdminProducts === 'function') renderAdminProducts();
+          alert('Produtos restaurados.');
+        }else{
+          alert('Produtos iniciais não encontrados.');
+        }
+      }
+    }
+
+    if(importBtn){
+      e.preventDefault();
+      var input = document.getElementById('importDataInput');
+      if(input) input.click();
+    }
+  }, true);
+})();
+</script>
+
+</body>
+</html>
