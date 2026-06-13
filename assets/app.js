@@ -4931,3 +4931,301 @@ if(document.readyState === 'loading'){
 }else{
   bootVitrineV73();
 }
+
+
+
+/* Versão 74: Firebase online real - produtos, pedidos e configurações */
+(function(){
+  const COLLECTION = 'cec_ecommerce_online';
+  const DOC_PRODUCTS = 'produtos';
+  const DOC_ORDERS = 'pedidos';
+  const DOC_CONFIG = 'configuracoes';
+
+  function dbV74(){
+    return window.CEC_DB || null;
+  }
+
+  function readyV74(){
+    return !!(window.CEC_FIREBASE_READY && dbV74());
+  }
+
+  function refV74(docId){
+    return dbV74().collection(COLLECTION).doc(docId);
+  }
+
+  function tsV74(){
+    try{
+      return firebase.firestore.FieldValue.serverTimestamp();
+    }catch(e){
+      return new Date().toISOString();
+    }
+  }
+
+  function readLocalV74(key, fallback){
+    try{
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) || fallback) : fallback;
+    }catch(e){
+      return fallback;
+    }
+  }
+
+  function writeLocalV74(key, value){
+    try{
+      localStorage.setItem(key, JSON.stringify(value));
+    }catch(e){
+      console.warn('Não foi possível salvar cache local:', key, e);
+    }
+  }
+
+  function firebaseStatusV74(type, msg){
+    const text = msg || '';
+    const id = 'firebaseStatusV74';
+    let box = document.getElementById(id);
+    if(!box && document.body){
+      box = document.createElement('div');
+      box.id = id;
+      box.className = 'firebase-status-v74';
+      box.setAttribute('aria-live','polite');
+      document.body.appendChild(box);
+    }
+    if(box){
+      box.className = 'firebase-status-v74 ' + (type || 'info');
+      box.textContent = text;
+      box.style.display = text ? 'block' : 'none';
+      if(type === 'ok'){
+        setTimeout(() => { if(box && box.textContent === text) box.style.display = 'none'; }, 2600);
+      }
+    }
+    try{ console[type === 'error' ? 'error' : 'log']('[Firebase]', text); }catch(e){}
+  }
+
+  function refreshProductsV74(){
+    try{
+      const products = typeof loadProducts === 'function' ? loadProducts() : readLocalV74('cec_products', []);
+      if(typeof renderAdminProducts === 'function' && document.getElementById('productsBody')) renderAdminProducts();
+      if(typeof renderMenuCategoriesV73 === 'function') renderMenuCategoriesV73(products);
+      if(typeof renderShopProductsV73 === 'function' && document.getElementById('productGrid')) renderShopProductsV73(products);
+      if(typeof renderShopProductsV72 === 'function' && document.getElementById('productGrid') && !window.__cecRenderedV74) renderShopProductsV72(products);
+      window.__cecRenderedV74 = true;
+      if(typeof renderCart === 'function') renderCart();
+      if(typeof updateCartCount === 'function') updateCartCount();
+    }catch(e){
+      console.warn('Erro ao atualizar produtos Firebase:', e);
+    }
+  }
+
+  function refreshOrdersV74(){
+    try{
+      if(typeof renderAdminOrders === 'function' && document.getElementById('ordersBody')) renderAdminOrders();
+      window.dispatchEvent(new CustomEvent('cec-orders-updated', {detail:{orders: typeof loadOrders === 'function' ? loadOrders() : []}}));
+    }catch(e){
+      console.warn('Erro ao atualizar pedidos Firebase:', e);
+    }
+  }
+
+  function refreshConfigV74(){
+    try{
+      if(typeof applySiteConfig === 'function') applySiteConfig();
+      if(document.getElementById('siteConfigForm') && typeof fillSiteConfigForm === 'function') fillSiteConfigForm();
+    }catch(e){
+      console.warn('Erro ao atualizar configurações Firebase:', e);
+    }
+  }
+
+  function payloadProductsV74(products){
+    return {
+      items: Array.isArray(products) ? products : [],
+      updatedAt: tsV74(),
+      updatedAtMs: Date.now()
+    };
+  }
+
+  function payloadOrdersV74(orders){
+    return {
+      items: Array.isArray(orders) ? orders : [],
+      updatedAt: tsV74(),
+      updatedAtMs: Date.now()
+    };
+  }
+
+  function payloadConfigV74(config){
+    return {
+      config: config || {},
+      updatedAt: tsV74(),
+      updatedAtMs: Date.now()
+    };
+  }
+
+  function saveDocV74(docId, payload, label){
+    if(!readyV74()){
+      firebaseStatusV74('error', 'Firebase não conectado. Veja se o Firestore foi criado e se o deploy carregou os scripts.');
+      return Promise.resolve(false);
+    }
+    return refV74(docId).set(payload, {merge:true}).then(() => {
+      firebaseStatusV74('ok', (label || 'Dados') + ' salvo online.');
+      return true;
+    }).catch(err => {
+      console.error('Erro Firebase:', err);
+      firebaseStatusV74('error', 'Firebase bloqueou o salvamento. Confira se o Firestore foi criado e se as regras permitem leitura/escrita.');
+      return false;
+    });
+  }
+
+  // Guarda funções antigas
+  const originalLoadProductsV74 = typeof loadProducts === 'function' ? loadProducts : null;
+  const originalLoadOrdersV74 = typeof loadOrders === 'function' ? loadOrders : null;
+  const originalLoadSiteConfigV74 = typeof loadSiteConfig === 'function' ? loadSiteConfig : null;
+
+  // Sobrescreve produtos
+  try{
+    saveProducts = function(products){
+      const clean = typeof normalizeProductImagesV41 === 'function' ? normalizeProductImagesV41(products) : (Array.isArray(products) ? products : []);
+      writeLocalV74('cec_products', clean);
+      saveDocV74(DOC_PRODUCTS, payloadProductsV74(clean), 'Produto');
+      return clean;
+    };
+  }catch(e){
+    window.saveProducts = function(products){
+      const clean = Array.isArray(products) ? products : [];
+      writeLocalV74('cec_products', clean);
+      saveDocV74(DOC_PRODUCTS, payloadProductsV74(clean), 'Produto');
+      return clean;
+    };
+  }
+
+  // Garante que o salvamento v40 também use Firebase
+  try{
+    saveProductsV40 = function(products){
+      const clean = Array.isArray(products) ? products : [];
+      writeLocalV74('cec_products', clean);
+      if(typeof saveProducts === 'function') saveProducts(clean);
+      return true;
+    };
+  }catch(e){}
+
+  // Sobrescreve pedidos
+  try{
+    saveOrders = function(orders){
+      let clean = Array.isArray(orders) ? orders : [];
+      try{
+        if(typeof mergeOrdersV43 === 'function') clean = mergeOrdersV43(clean);
+      }catch(e){}
+      writeLocalV74('cec_orders', clean);
+      const index = {};
+      clean.forEach(o => { if(o && o.code) index[o.code] = o; });
+      writeLocalV74('cec_orders_index', index);
+      writeLocalV74('cec_orders_backup_v43', clean);
+      try{ localStorage.setItem('cec_orders_updated_at', String(Date.now())); }catch(e){}
+      window.dispatchEvent(new CustomEvent('cec-orders-updated', {detail:{orders:clean}}));
+      saveDocV74(DOC_ORDERS, payloadOrdersV74(clean), 'Pedido');
+      return clean;
+    };
+  }catch(e){}
+
+  // Sobrescreve configurações do site
+  try{
+    saveSiteConfig = function(config){
+      const current = originalLoadSiteConfigV74 ? originalLoadSiteConfigV74() : {};
+      const merged = {...current, ...(config || {})};
+      writeLocalV74('cec_site_config', merged);
+      refreshConfigV74();
+      saveDocV74(DOC_CONFIG, payloadConfigV74(merged), 'Configuração');
+      return merged;
+    };
+  }catch(e){}
+
+  function listenProductsV74(){
+    refV74(DOC_PRODUCTS).onSnapshot(snapshot => {
+      if(!snapshot.exists){
+        const initial = originalLoadProductsV74 ? originalLoadProductsV74() : readLocalV74('cec_products', CEC_DEFAULT_PRODUCTS || []);
+        refV74(DOC_PRODUCTS).set(payloadProductsV74(initial), {merge:true}).catch(err => console.warn('Seed produtos falhou:', err));
+        return;
+      }
+      const data = snapshot.data() || {};
+      const items = Array.isArray(data.items) ? data.items : [];
+      if(items.length){
+        writeLocalV74('cec_products', items);
+        refreshProductsV74();
+      }
+    }, err => {
+      console.error('Erro ao ler produtos Firebase:', err);
+      firebaseStatusV74('error', 'Não consegui ler os produtos online. Confira Firestore e regras.');
+    });
+  }
+
+  function listenOrdersV74(){
+    refV74(DOC_ORDERS).onSnapshot(snapshot => {
+      if(!snapshot.exists){
+        const initial = originalLoadOrdersV74 ? originalLoadOrdersV74() : readLocalV74('cec_orders', []);
+        refV74(DOC_ORDERS).set(payloadOrdersV74(initial), {merge:true}).catch(err => console.warn('Seed pedidos falhou:', err));
+        return;
+      }
+      const data = snapshot.data() || {};
+      const items = Array.isArray(data.items) ? data.items : [];
+      writeLocalV74('cec_orders', items);
+      const index = {};
+      items.forEach(o => { if(o && o.code) index[o.code] = o; });
+      writeLocalV74('cec_orders_index', index);
+      writeLocalV74('cec_orders_backup_v43', items);
+      refreshOrdersV74();
+    }, err => {
+      console.error('Erro ao ler pedidos Firebase:', err);
+      firebaseStatusV74('error', 'Não consegui ler os pedidos online. Confira Firestore e regras.');
+    });
+  }
+
+  function listenConfigV74(){
+    refV74(DOC_CONFIG).onSnapshot(snapshot => {
+      if(!snapshot.exists){
+        const initial = originalLoadSiteConfigV74 ? originalLoadSiteConfigV74() : readLocalV74('cec_site_config', {});
+        refV74(DOC_CONFIG).set(payloadConfigV74(initial), {merge:true}).catch(err => console.warn('Seed configurações falhou:', err));
+        return;
+      }
+      const data = snapshot.data() || {};
+      const cfg = data.config || {};
+      if(cfg && Object.keys(cfg).length){
+        writeLocalV74('cec_site_config', cfg);
+        refreshConfigV74();
+      }
+    }, err => {
+      console.error('Erro ao ler configurações Firebase:', err);
+    });
+  }
+
+  function bindRefreshV74(){
+    document.getElementById('firebaseSyncRefreshV74')?.addEventListener('click', () => {
+      refreshProductsV74();
+      refreshOrdersV74();
+      refreshConfigV74();
+      firebaseStatusV74('ok', 'Tela atualizada com dados do Firebase.');
+    });
+  }
+
+  function bootFirebaseV74(){
+    bindRefreshV74();
+
+    if(!readyV74()){
+      firebaseStatusV74('error', 'Firebase não iniciou. Confira se o site está online e se os scripts do Firebase carregaram.');
+      return;
+    }
+
+    firebaseStatusV74('ok', 'Firebase conectado. Admin, loja e pedidos agora sincronizam online.');
+    listenProductsV74();
+    listenOrdersV74();
+    listenConfigV74();
+
+    setTimeout(() => {
+      refreshProductsV74();
+      refreshOrdersV74();
+      refreshConfigV74();
+    }, 900);
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', bootFirebaseV74);
+  }else{
+    bootFirebaseV74();
+  }
+})();
+

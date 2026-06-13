@@ -13,7 +13,7 @@
 
   <section class="login-box" id="adminLogin">
    <h1>Acesso administrativo</h1>
-   <p class="muted-box">Senha inicial: <strong>admin123</strong>. Troque depois no arquivo <strong>assets/app.js</strong> ou conecte ao Firebase para login seguro.</p>
+   <p class="muted-box">Senha inicial: <strong>admin123</strong>. Esta versão já está conectada ao Firebase para produtos, pedidos e configurações online.</p>
    <form id="adminLoginForm" autocomplete="off">
     <div class="field"><label>Senha</label><input id="adminPassword" type="password" required placeholder="Digite a senha" /></div>
     <button class="btn btn-primary" type="submit" style="width:100%">Entrar</button><p id="adminLoginError" style="display:none;color:#ff8d8d;font-weight:900;margin-top:12px;text-align:center">Senha incorreta</p>
@@ -25,7 +25,7 @@
     <div><h2 style="margin:0;color:var(--brand)">Admin C & C</h2><p style="margin:4px 0 0;color:var(--muted)">Produtos, pedidos, configurações, SEO básico e dados comerciais.</p></div>
     <button class="btn btn-danger" id="logoutBtn" type="button">Sair</button>
    </div>
-   <div class="notice"><strong>Atenção:</strong> separar o admin em <strong>admin.html</strong> evita aparecer para o cliente, mas não é segurança real. Para e-commerce profissional com pedidos online para você acompanhar de qualquer computador, precisa banco de dados e autenticação, como Firebase ou Supabase.</div>
+   <div class="notice"><strong>Firebase:</strong> esta versão salva produtos, pedidos e configurações online. O admin continua em <strong>admin.html</strong> e a senha inicial é <strong>admin123</strong>.</div>
    <div class="admin-summary-v35">
      <div><strong>Produtos</strong><span>Cadastro completo com preço, descrição, estoque e compatibilidade.</span></div>
      <div><strong>Pedidos</strong><span>Status, visualizar, copiar dados e excluir.</span></div>
@@ -36,7 +36,7 @@
    <div class="admin-section" id="productsAdmin">
     <div class="admin-grid admin-grid-products-v47">
      <div class="card admin-form-card-v47">
-      <div class="section-head-v47"><h3 id="productFormTitle">Cadastrar produto</h3><p>Preencha os dados do item e salve para atualizar a loja local.</p></div><p class="image-static-note-v44"><strong>Imagem offline:</strong> o sistema salva uma prévia leve da imagem dentro do cadastro do produto.</p><p class="image-path-note-v36">Imagens: salve o caminho no produto. Exemplo: <strong>assets/img/produtos/toner-brother.jpg</strong></p>
+      <div class="section-head-v47"><h3 id="productFormTitle">Cadastrar produto</h3><p>Preencha os dados do item e salve para atualizar a loja online.</p></div><p class="image-static-note-v44"><strong>Firebase online:</strong> o produto salvo aqui aparece na Loja para todos os acessos.</p><p class="image-path-note-v36">Imagens: escolha uma imagem leve ou informe uma URL/caminho. Exemplo: <strong>assets/img/produtos/toner-brother.jpg</strong></p>
       <form id="productForm" class="product-form-v30" novalidate onsubmit="return saveProductFormV40(event)">
        <input type="hidden" id="prodId" />
 
@@ -81,10 +81,10 @@
       </form>
      </div>
      <div class="table-panel-v47">
-      <div class="admin-shop-sync-v48">
-       <button class="btn btn-primary" id="openShopWithProductsV48" type="button">Abrir Loja com produtos do Admin</button>
-       <button class="btn btn-outline" id="copyShopProductsLinkV48" type="button">Copiar link da Loja com produtos</button>
-       <small>Use estes botões quando estiver testando offline/VS Code para garantir que a Loja receba os produtos do Admin.</small>
+      <div class="admin-shop-sync-v48 firebase-admin-sync-v74">
+       <strong>Firebase online ativo</strong>
+       <small>Produtos salvos aqui são enviados para o banco online e aparecem na Loja pública.</small>
+       <button class="btn btn-outline" id="firebaseSyncRefreshV74" type="button">Atualizar dados online</button>
       </div>
       <div class="table-panel-head-v47">
        <div>
@@ -99,8 +99,8 @@
 
    <div class="admin-section hidden" id="ordersAdmin">
     <div class="orders-sync-note-v43">
-     <strong>Pedidos sincronizados neste navegador</strong>
-     <span>Ao alterar o status aqui, o acompanhamento pelo código é atualizado no mesmo navegador.</span>
+     <strong>Pedidos sincronizados online pelo Firebase</strong>
+     <span>Ao alterar o status aqui, o acompanhamento pelo código é atualizado para o cliente.</span>
      <button class="btn btn-soft" id="refreshOrdersBtnV43" type="button">Atualizar pedidos</button>
     </div>
     <div class="admin-grid">
@@ -303,6 +303,10 @@
 })();
 </script>
 
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-analytics-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
 <script src="assets/app.js"></script>
 
 <script>

@@ -1,0 +1,36 @@
+CONFIGURAR FIREBASE PARA O ADMIN ONLINE
+
+1) No Firebase Console, abra o projeto:
+   lojacecdistribuidora
+
+2) Vá em:
+   Build -> Firestore Database
+
+3) Clique em:
+   Criar banco de dados
+
+4) Para testar rápido, escolha modo de teste.
+   Depois publique estas regras em Firestore Database -> Rules:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /cec_ecommerce_online/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+
+ATENÇÃO:
+Essas regras liberam leitura e escrita para o site funcionar agora.
+Depois o ideal é colocar login seguro com Firebase Authentication para proteger o Admin.
+
+O que esta versão salva online:
+- Produtos
+- Pedidos
+- Status dos pedidos
+- Configurações do site
+
+Arquivos importantes:
+- assets/firebase-config.js
+- assets/app.js
