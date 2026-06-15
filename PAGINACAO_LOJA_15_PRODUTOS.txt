@@ -1,0 +1,14 @@
+VERSÃO 89 - PAGINAÇÃO NA LOJA
+
+Ajuste feito:
+- A página Loja mostra no máximo 15 produtos por vez.
+- Se tiver mais de 15 produtos, aparece paginação abaixo da vitrine.
+- Os botões aparecem como 1, 2, 3...
+- Também tem Anterior e Próxima.
+- Ao buscar, ordenar ou trocar categoria, volta automaticamente para página 1.
+- Admin continua igual em /admin.html.
+
+Teste depois do deploy:
+https://www.cecdistribuidora.com/loja
+
+Para testar bem, cadastre mais de 15 produtos no Admin.

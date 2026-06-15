@@ -90,6 +90,8 @@ let SITE_CONFIG = {...CEC_DEFAULT_SITE_CONFIG, ...readJson('cec_site_config', {}
 let SHOP_RENDER_KEY = '';
 let CATEGORY_RENDER_KEY = '';
 let ACTIVE_CATEGORY = 'Todos';
+const SHOP_PAGE_SIZE = 15;
+let SHOP_PAGE = 1;
 
 let SHOP_FIRST_STABLE_RENDER = false;
 let SHOP_WAITING_STABLE = false;
@@ -419,6 +421,51 @@ function filteredProducts(){
 
   return list;
 }
+
+function ensureShopPagination(){
+  const grid = $('#productGrid');
+  if(!grid) return null;
+
+  let box = $('#shopPagination');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'shopPagination';
+    box.className = 'shop-pagination-v89';
+    grid.insertAdjacentElement('afterend', box);
+  }
+  return box;
+}
+
+function renderShopPagination(total, page, pageCount){
+  const box = ensureShopPagination();
+  if(!box) return;
+
+  if(total <= SHOP_PAGE_SIZE || pageCount <= 1){
+    box.innerHTML = '';
+    box.classList.add('hidden');
+    return;
+  }
+
+  box.classList.remove('hidden');
+
+  const from = ((page - 1) * SHOP_PAGE_SIZE) + 1;
+  const to = Math.min(page * SHOP_PAGE_SIZE, total);
+
+  const buttons = [];
+  buttons.push(`<button type="button" class="shop-page-btn-v89" data-shop-page="${Math.max(1, page - 1)}" ${page === 1 ? 'disabled' : ''}>Anterior</button>`);
+
+  for(let i = 1; i <= pageCount; i++){
+    buttons.push(`<button type="button" class="shop-page-btn-v89 ${i === page ? 'active' : ''}" data-shop-page="${i}" aria-label="Página ${i}">${i}</button>`);
+  }
+
+  buttons.push(`<button type="button" class="shop-page-btn-v89" data-shop-page="${Math.min(pageCount, page + 1)}" ${page === pageCount ? 'disabled' : ''}>Próxima</button>`);
+
+  box.innerHTML = `
+    <div class="shop-page-info-v89">Mostrando ${from}-${to} de ${total} produtos • Página ${page} de ${pageCount}</div>
+    <div class="shop-page-buttons-v89">${buttons.join('')}</div>
+  `;
+}
+
 function shopCard(product){
   const src = productImage(product);
   const fallback = defaultImageForCategory(product.category);
@@ -453,24 +500,40 @@ function renderShopProducts(){
 
   renderCategories();
   const list = filteredProducts();
-  const resultLabel = `${list.length} produto(s)`;
+  const total = list.length;
+  const pageCount = Math.max(1, Math.ceil(total / SHOP_PAGE_SIZE));
+
+  if(SHOP_PAGE > pageCount) SHOP_PAGE = pageCount;
+  if(SHOP_PAGE < 1) SHOP_PAGE = 1;
+
+  const start = (SHOP_PAGE - 1) * SHOP_PAGE_SIZE;
+  const pageList = list.slice(start, start + SHOP_PAGE_SIZE);
+
+  const resultLabel = pageCount > 1
+    ? `${total} produto(s) • Página ${SHOP_PAGE} de ${pageCount}`
+    : `${total} produto(s)`;
   $('#resultCount') && ($('#resultCount').textContent = resultLabel);
 
   const key = JSON.stringify({
     search: $('#searchProduct')?.value || '',
     sort: $('#sortProduct')?.value || '',
     category: ACTIVE_CATEGORY,
+    page: SHOP_PAGE,
+    pageSize: SHOP_PAGE_SIZE,
     products: list.map(p => ({id:p.id,name:p.name,cat:p.category,price:p.price,tag:p.tag,stock:p.stock,img:productImage(p)}))
   });
   if(SHOP_RENDER_KEY === key){
+    renderShopPagination(total, SHOP_PAGE, pageCount);
     revealShopWhenStable();
     return;
   }
   SHOP_RENDER_KEY = key;
 
-  grid.innerHTML = list.length
-    ? list.map(shopCard).join('')
+  grid.innerHTML = pageList.length
+    ? pageList.map(shopCard).join('')
     : '<div class="muted-box">Nenhum produto encontrado. Limpe a busca ou escolha outra categoria.</div>';
+
+  renderShopPagination(total, SHOP_PAGE, pageCount);
   preloadProductImages();
   revealShopWhenStable();
 }
@@ -480,18 +543,47 @@ function renderAllProducts(){
 }
 function setupShop(){
   if(!$('#productGrid')) return;
-  $('#searchProduct')?.addEventListener('input', () => { SHOP_RENDER_KEY=''; renderShopProducts(); });
-  $('#sortProduct')?.addEventListener('change', () => { SHOP_RENDER_KEY=''; renderShopProducts(); });
+
+  $('#searchProduct')?.addEventListener('input', () => {
+    SHOP_PAGE = 1;
+    SHOP_RENDER_KEY = '';
+    renderShopProducts();
+  });
+
+  $('#sortProduct')?.addEventListener('change', () => {
+    SHOP_PAGE = 1;
+    SHOP_RENDER_KEY = '';
+    renderShopProducts();
+  });
+
   $('#categoryFilters')?.addEventListener('click', e => {
     const btn = e.target.closest('[data-shop-category]');
     if(!btn) return;
     ACTIVE_CATEGORY = btn.dataset.shopCategory || 'Todos';
+    SHOP_PAGE = 1;
     CATEGORY_RENDER_KEY = '';
     SHOP_RENDER_KEY = '';
     renderShopProducts();
   });
+
+  document.addEventListener('click', e => {
+    const pageBtn = e.target.closest('[data-shop-page]');
+    if(!pageBtn) return;
+
+    const nextPage = Number(pageBtn.dataset.shopPage || 1);
+    if(!Number.isFinite(nextPage) || nextPage === SHOP_PAGE) return;
+
+    SHOP_PAGE = nextPage;
+    SHOP_RENDER_KEY = '';
+    renderShopProducts();
+
+    const grid = $('#productGrid');
+    if(grid) grid.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+
   renderShopProducts();
 }
+
 
 function openModal(id){
   const modal = $(id);

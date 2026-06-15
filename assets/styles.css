@@ -3600,3 +3600,68 @@ td{
 #clearAdminSessionBtn{
   font-size:14px;
 }
+
+
+/* Versão 89: paginação da loja */
+.shop-pagination-v89{
+  margin:24px 0 0;
+  padding:16px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:20px;
+  box-shadow:0 10px 26px rgba(23,32,42,.06);
+  display:grid;
+  gap:12px;
+  justify-items:center;
+}
+.shop-page-info-v89{
+  color:var(--muted);
+  font-weight:800;
+  font-size:14px;
+  text-align:center;
+}
+.shop-page-buttons-v89{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:center;
+  align-items:center;
+}
+.shop-page-btn-v89{
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--brand);
+  border-radius:999px;
+  min-width:42px;
+  min-height:40px;
+  padding:9px 13px;
+  font-weight:900;
+}
+.shop-page-btn-v89.active{
+  background:var(--brand);
+  border-color:var(--brand);
+  color:#fff;
+}
+.shop-page-btn-v89:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+.shop-page-btn-v89:not(:disabled):hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 18px rgba(23,32,42,.08);
+}
+@media(max-width:720px){
+  .shop-pagination-v89{
+    margin-top:18px;
+    padding:13px;
+  }
+  .shop-page-buttons-v89{
+    gap:6px;
+  }
+  .shop-page-btn-v89{
+    min-width:38px;
+    min-height:38px;
+    padding:8px 11px;
+    font-size:14px;
+  }
+}
