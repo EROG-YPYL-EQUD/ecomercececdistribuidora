@@ -1,0 +1,19 @@
+CORREÇÃO /index.html
+
+Esta versão remove links internos para index.html e adiciona redirecionamento no Vercel:
+
+/index.html  ->  /
+
+Arquivos ajustados:
+- links href="index.html" viraram href="/"
+- vercel.json criado
+- canonical da home aponta para /
+- index.html também corrige a barra do navegador se alguém abrir /index.html manualmente
+
+Depois de subir no GitHub:
+1. Aguarde o Vercel ficar Ready
+2. Abra:
+   https://www.cecdistribuidora.com/index.html
+
+Ele deve mudar para:
+   https://www.cecdistribuidora.com/

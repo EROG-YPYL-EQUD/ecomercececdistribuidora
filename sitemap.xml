@@ -1,45 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://lojacecdistribuidoracgms.vercel.app/</loc>
-    <lastmod>2026-06-13</lastmod>
+    <loc>https://www.cecdistribuidora.com/</loc>
+    <lastmod>2026-06-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://lojacecdistribuidoracgms.vercel.app/loja.html</loc>
-    <lastmod>2026-06-13</lastmod>
+    <loc>https://www.cecdistribuidora.com/loja.html</loc>
+    <lastmod>2026-06-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://lojacecdistribuidoracgms.vercel.app/entregas.html</loc>
-    <lastmod>2026-06-13</lastmod>
+    <loc>https://www.cecdistribuidora.com/entregas.html</loc>
+    <lastmod>2026-06-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lojacecdistribuidoracgms.vercel.app/acompanhar.html</loc>
-    <lastmod>2026-06-13</lastmod>
+    <loc>https://www.cecdistribuidora.com/acompanhar.html</loc>
+    <lastmod>2026-06-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lojacecdistribuidoracgms.vercel.app/contato.html</loc>
-    <lastmod>2026-06-13</lastmod>
+    <loc>https://www.cecdistribuidora.com/contato.html</loc>
+    <lastmod>2026-06-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lojacecdistribuidoracgms.vercel.app/politica-privacidade.html</loc>
-    <lastmod>2026-06-13</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://www.cecdistribuidora.com/politica-privacidade.html</loc>
+    <lastmod>2026-06-15</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://lojacecdistribuidoracgms.vercel.app/termos.html</loc>
-    <lastmod>2026-06-13</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://www.cecdistribuidora.com/termos.html</loc>
+    <lastmod>2026-06-15</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 </urlset>

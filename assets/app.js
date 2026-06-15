@@ -855,7 +855,7 @@ function adminAuth(){
 function authMessage(error){
   const code = error && error.code ? String(error.code) : '';
   if(code.includes('user-not-found')) return 'Usuário não encontrado no Firebase.';
-  if(code.includes('wrong-password') || code.includes('invalid-credential')) return 'E-mail ou senha incorretos.';
+  if(code.includes('wrong-password') || code.includes('invalid-credential')) return 'E-mail ou senha incorretos. O acesso não foi liberado.';
   if(code.includes('invalid-email')) return 'E-mail inválido.';
   if(code.includes('too-many-requests')) return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
   if(code.includes('network')) return 'Falha de internet. Tente novamente.';
@@ -866,6 +866,11 @@ function authMessage(error){
 function showAdminPanel(user){
   $('#adminLogin')?.classList.add('hidden');
   $('#adminPanel')?.classList.remove('hidden');
+  const errorEl = $('#adminLoginError');
+  if(errorEl){
+    errorEl.textContent = '';
+    errorEl.style.display = 'none';
+  }
   const emailEl = $('#adminLoggedEmail');
   if(emailEl) emailEl.textContent = user && user.email ? 'Logado como: ' + user.email : '';
   renderAdminProducts();
@@ -894,30 +899,54 @@ function setupAdmin(){
     setLoginError('Firebase Authentication não carregou. Confira se o arquivo assets/firebase-config.js subiu e se o script firebase-auth-compat.js está no admin.html.');
   }else{
     auth.onAuthStateChanged(user => {
-      if(user) showAdminPanel(user);
-      else showAdminLogin();
+      const errorVisible = $('#adminLoginError')?.style.display === 'block';
+      if(user && !errorVisible) showAdminPanel(user);
+      else if(!user) showAdminLogin();
     });
   }
 
   $('#adminLoginForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     setLoginError('');
-    const email = $('#adminEmail')?.value.trim() || '';
+    const email = ($('#adminEmail')?.value || '').trim().toLowerCase();
     const pass = $('#adminPassword')?.value || '';
 
     if(!auth){
       setLoginError('Firebase Authentication não está disponível.');
+      showAdminLogin();
       return;
     }
 
     try{
-      await auth.signInWithEmailAndPassword(email, pass);
+      // Garante login limpo. Se existia uma sessão antiga no navegador,
+      // ela não pode liberar o painel quando a nova senha estiver errada.
+      if(auth.currentUser){
+        await auth.signOut();
+      }
+
+      const cred = await auth.signInWithEmailAndPassword(email, pass);
+      if(!cred || !cred.user){
+        throw new Error('Login não confirmado.');
+      }
+
       $('#adminPassword') && ($('#adminPassword').value = '');
       setLoginError('');
+      showAdminPanel(cred.user);
       toast('Login realizado.');
     }catch(err){
+      try{ await auth.signOut(); }catch(e){}
+      showAdminLogin();
       setLoginError(authMessage(err));
     }
+  });
+
+
+  $('#clearAdminSessionBtn')?.addEventListener('click', async () => {
+    try{ await auth?.signOut(); }catch(e){}
+    try{ sessionStorage.removeItem('cec_admin_logged'); localStorage.removeItem('cec_admin_logged'); }catch(e){}
+    $('#adminPassword') && ($('#adminPassword').value = '');
+    setLoginError('Acesso salvo limpo. Digite e-mail e senha novamente.');
+    showAdminLogin();
   });
 
   $('#resetAdminPasswordBtn')?.addEventListener('click', async () => {

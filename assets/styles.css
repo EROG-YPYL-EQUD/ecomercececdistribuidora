@@ -3595,3 +3595,8 @@ td{
   backface-visibility:hidden;
   transition:none !important;
 }
+
+/* Versão 84: login Admin corrigido */
+#clearAdminSessionBtn{
+  font-size:14px;
+}
