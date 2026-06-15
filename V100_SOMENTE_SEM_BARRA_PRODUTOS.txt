@@ -1,0 +1,22 @@
+VERSÃO 100 - BASE 89 COM AJUSTE SOMENTE NA BARRA DE PRODUTOS CADASTRADOS
+
+Base usada:
+- versão 89
+
+Alterado somente:
+- CSS da tabela Produtos cadastrados
+
+Não mexido:
+- Cadastro de produto
+- Loja
+- Carrinho
+- Login Admin
+- Firebase
+- URLs
+- HTML
+- JavaScript
+
+Correção:
+- Remove a barra horizontal em Produtos cadastrados.
+- Mantém a tabela no visual original.
+- Faz os textos quebrarem dentro da própria coluna para aparecer a linha na tela.
