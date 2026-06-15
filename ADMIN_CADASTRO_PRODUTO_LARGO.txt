@@ -1,0 +1,14 @@
+VERSÃO 90 - CADASTRO DE PRODUTO MAIS LARGO
+
+Ajuste feito:
+- Tela Admin ficou mais larga.
+- Grid de Cadastro de Produto ficou maior.
+- Campos aparecem melhor e não ficam espremidos.
+- Em telas médias, o formulário fica em cima e a lista de produtos fica abaixo.
+- Em telas grandes, formulário e lista ficam lado a lado, mas com mais espaço.
+- Botões da imagem quebram linha corretamente sem sumir informação.
+
+Teste depois do deploy:
+https://www.cecdistribuidora.com/admin.html
+
+Acesse Produtos > Cadastrar produto.
