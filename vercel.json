@@ -4,6 +4,71 @@
       "source": "/index.html",
       "destination": "/",
       "permanent": true
+    },
+    {
+      "source": "/loja.html",
+      "destination": "/loja",
+      "permanent": true
+    },
+    {
+      "source": "/entregas.html",
+      "destination": "/entregas",
+      "permanent": true
+    },
+    {
+      "source": "/acompanhar.html",
+      "destination": "/acompanhar",
+      "permanent": true
+    },
+    {
+      "source": "/contato.html",
+      "destination": "/contato",
+      "permanent": true
+    },
+    {
+      "source": "/politica-privacidade.html",
+      "destination": "/politica-privacidade",
+      "permanent": true
+    },
+    {
+      "source": "/termos.html",
+      "destination": "/termos",
+      "permanent": true
+    },
+    {
+      "source": "/obrigado.html",
+      "destination": "/obrigado",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/loja",
+      "destination": "/loja.html"
+    },
+    {
+      "source": "/entregas",
+      "destination": "/entregas.html"
+    },
+    {
+      "source": "/acompanhar",
+      "destination": "/acompanhar.html"
+    },
+    {
+      "source": "/contato",
+      "destination": "/contato.html"
+    },
+    {
+      "source": "/politica-privacidade",
+      "destination": "/politica-privacidade.html"
+    },
+    {
+      "source": "/termos",
+      "destination": "/termos.html"
+    },
+    {
+      "source": "/obrigado",
+      "destination": "/obrigado.html"
     }
   ]
 }

@@ -1,0 +1,27 @@
+VERSÃO 88 - URLS LIMPAS
+
+Agora as páginas públicas usam links limpos:
+
+/loja
+/entregas
+/acompanhar
+/contato
+/politica-privacidade
+/termos
+
+O Admin foi mantido como:
+/admin.html
+
+O arquivo vercel.json faz:
+- /loja.html -> /loja
+- /entregas.html -> /entregas
+- /acompanhar.html -> /acompanhar
+- /contato.html -> /contato
+- /index.html -> /
+
+Depois de subir no GitHub e o Vercel ficar Ready, teste:
+https://www.cecdistribuidora.com/loja
+https://www.cecdistribuidora.com/entregas
+https://www.cecdistribuidora.com/acompanhar
+https://www.cecdistribuidora.com/contato
+https://www.cecdistribuidora.com/admin.html
