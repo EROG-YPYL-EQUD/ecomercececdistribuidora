@@ -1,0 +1,34 @@
+VERSÃO 101 - DOMÍNIO OFICIAL .COM.BR
+
+Domínio oficial configurado:
+https://cecdistribuidora.com.br
+
+Base usada:
+- versão 100
+
+Mantido:
+- Loja com paginação de 15 produtos.
+- Admin em /admin.html.
+- Firebase/Auth.
+- Ajuste somente da tabela Produtos cadastrados da versão 100.
+- URLs limpas.
+
+Ajustado:
+- robots.txt
+- sitemap.xml
+- canonical
+- og:url
+- URLs técnicas que apontavam para .com ou Vercel
+
+Depois de subir no GitHub e o Vercel ficar Ready, teste:
+https://cecdistribuidora.com.br/
+https://cecdistribuidora.com.br/loja
+https://cecdistribuidora.com.br/admin.html
+https://cecdistribuidora.com.br/robots.txt
+https://cecdistribuidora.com.br/sitemap.xml
+
+No Google Search Console, use agora a propriedade:
+https://cecdistribuidora.com.br/
+
+Envie:
+sitemap.xml
