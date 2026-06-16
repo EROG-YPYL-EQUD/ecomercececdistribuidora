@@ -1,0 +1,32 @@
+VERSÃO 102 - DOMÍNIO PRINCIPAL COM WWW
+
+Domínio principal configurado:
+https://www.cecdistribuidora.com.br
+
+Use esta versão porque no Vercel ficou assim:
+cecdistribuidora.com.br -> 308 para www.cecdistribuidora.com.br
+www.cecdistribuidora.com.br -> Production
+
+Mantido da versão 101:
+- Loja com paginação de 15 produtos.
+- Admin em /admin.html.
+- Firebase/Auth.
+- URLs limpas.
+- Ajuste da tabela Produtos cadastrados.
+
+Ajustado:
+- robots.txt
+- sitemap.xml
+- canonical
+- og:url
+- URLs técnicas para www.cecdistribuidora.com.br
+
+Depois de subir no GitHub e o Vercel ficar Ready, teste:
+https://www.cecdistribuidora.com.br/
+https://www.cecdistribuidora.com.br/loja
+https://www.cecdistribuidora.com.br/admin.html
+https://www.cecdistribuidora.com.br/robots.txt
+https://www.cecdistribuidora.com.br/sitemap.xml
+
+No Google Search Console, use:
+https://www.cecdistribuidora.com.br/

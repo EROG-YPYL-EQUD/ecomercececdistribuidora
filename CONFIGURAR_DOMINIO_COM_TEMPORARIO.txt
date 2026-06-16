@@ -1,7 +1,7 @@
 VERSÃO 86 - DOMÍNIO .COM TEMPORÁRIO
 
 Domínio temporário configurado:
-https://cecdistribuidora.com.br.br
+https://www.cecdistribuidora.com.br.br.br
 
 Use esta versão enquanto o .com.br ainda não estiver pronto.
 
@@ -13,17 +13,17 @@ Foi mantido o SEO existente. Só ajustei as URLs técnicas:
 - URLs que apontavam para Vercel ou .com.br
 
 Depois de subir no GitHub e o Vercel ficar Ready, teste:
-https://cecdistribuidora.com.br.br/
-https://cecdistribuidora.com.br.br/loja.html
-https://cecdistribuidora.com.br.br/admin.html
-https://cecdistribuidora.com.br.br/robots.txt
-https://cecdistribuidora.com.br.br/sitemap.xml
+https://www.cecdistribuidora.com.br.br.br/
+https://www.cecdistribuidora.com.br.br.br/loja.html
+https://www.cecdistribuidora.com.br.br.br/admin.html
+https://www.cecdistribuidora.com.br.br.br/robots.txt
+https://www.cecdistribuidora.com.br.br.br/sitemap.xml
 
 No Google Search Console, enquanto usar o .com:
 1. Adicione/verifique a propriedade:
-   https://cecdistribuidora.com.br.br/
+   https://www.cecdistribuidora.com.br.br.br/
 2. Envie:
    sitemap.xml
 
 Quando o .com.br estiver pronto, trocamos as URLs para:
-https://cecdistribuidora.com.br.br
+https://www.cecdistribuidora.com.br.br.br

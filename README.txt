@@ -65,8 +65,8 @@ Versão 21 SEO Google:
 - Adicionadas meta descriptions, títulos SEO, canonical, Open Graph e Twitter Cards.
 - Adicionado Schema.org JSON-LD do tipo Store com endereço, horário e contato.
 - Criados robots.txt e sitemap.xml.
-- Domínio configurado no sitemap/canonical: https://cecdistribuidora.com.br.br
-IMPORTANTE: se publicar em outro domínio, trocar https://cecdistribuidora.com.br.br nos arquivos HTML e sitemap.xml.
+- Domínio configurado no sitemap/canonical: https://www.cecdistribuidora.com.br.br.br
+IMPORTANTE: se publicar em outro domínio, trocar https://www.cecdistribuidora.com.br.br.br nos arquivos HTML e sitemap.xml.
 
 
 Versão 22: removido o telefone (67) 98145-6492 e atualizado WhatsApp principal para (67) 3042-4796 em links, botões, rodapé, contato, WhatsApp de pedidos e dados SEO.
@@ -83,7 +83,7 @@ Versão 25:
 - CEP entra no WhatsApp, acompanhamento de pedido e painel Admin.
 - SEO melhorado com títulos, descrições, canonical, Open Graph, robots, sitemap, Schema.org Store, BreadcrumbList, FAQPage e ItemList da loja.
 - Adicionado texto local discreto na home para ajudar o Google a entender Campo Grande/MS e os serviços.
-Domínio usado no SEO: https://cecdistribuidora.com.br.br. Se publicar em outro domínio, trocar canonical/sitemap.
+Domínio usado no SEO: https://www.cecdistribuidora.com.br.br.br. Se publicar em outro domínio, trocar canonical/sitemap.
 
 
 Versão 26: página inicial redesenhada em formato premium centralizado, com logo em destaque, título forte, texto institucional central, botões e contatos em cards menores.
@@ -103,7 +103,7 @@ Versão 28:
 - Mantido botão de WhatsApp e botão de copiar mensagem.
 - Criada página obrigado.html para retorno após o envio.
 - Importante: na primeira vez, o FormSubmit pode pedir confirmação no e-mail vendas@cecvendas.com. Depois de confirmado, os envios passam a chegar normalmente.
-- Se publicar em domínio diferente de https://cecdistribuidora.com.br.br, trocar o campo _next do formulário em contato.html.
+- Se publicar em domínio diferente de https://www.cecdistribuidora.com.br.br.br, trocar o campo _next do formulário em contato.html.
 
 
 Versão 29:
@@ -115,7 +115,7 @@ Importante: em site estático, alterações do Admin ficam no navegador do Admin
 
 
 Versão 30:
-- Domínio SEO atualizado para https://cecdistribuidora.com.br.br.
+- Domínio SEO atualizado para https://www.cecdistribuidora.com.br.br.br.
 - Admin de produtos completo: preço, descrição, imagem, tipo, marca, código/SKU, cor, rendimento, impressoras compatíveis e observações.
 - Loja exibe compatibilidade do produto no card e nos detalhes.
 - Busca da loja pesquisa também por marca, SKU/código, cor, rendimento e impressoras compatíveis.

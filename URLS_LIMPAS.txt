@@ -20,8 +20,8 @@ O arquivo vercel.json faz:
 - /index.html -> /
 
 Depois de subir no GitHub e o Vercel ficar Ready, teste:
-https://cecdistribuidora.com.br.br/loja
-https://cecdistribuidora.com.br.br/entregas
-https://cecdistribuidora.com.br.br/acompanhar
-https://cecdistribuidora.com.br.br/contato
-https://cecdistribuidora.com.br.br/admin.html
+https://www.cecdistribuidora.com.br.br.br/loja
+https://www.cecdistribuidora.com.br.br.br/entregas
+https://www.cecdistribuidora.com.br.br.br/acompanhar
+https://www.cecdistribuidora.com.br.br.br/contato
+https://www.cecdistribuidora.com.br.br.br/admin.html
