@@ -1539,3 +1539,164 @@ window.openCheckout = openCheckout;
 window.fmt = fmt;
 window.esc = esc;
 window.toast = toast;
+
+
+/* V103 - Atendimento automático "Fale com a C&C" */
+const CEC_SUPPORT_WHATSAPP = '556730424796';
+
+function cecBotAnswer(text){
+  const msg = normalize(text || '');
+
+  if(!msg.trim()){
+    return 'Olá! Sou o atendimento virtual da C&C Distribuidora. Posso ajudar com produtos, pedidos, entregas, pagamentos, trocas, devoluções ou atendimento humano.';
+  }
+
+  if(/humano|atendente|pessoa|whats|zap|telefone|contato|falar/i.test(msg)){
+    return 'Claro. Para falar com um atendente da C&C, clique no botão do WhatsApp abaixo ou envie mensagem para (67) 3042-4796.';
+  }
+
+  if(/compr|orcament|cotac|preco|valor|pedido|quero|preciso|tem/i.test(msg)){
+    return 'Para comprar ou pedir orçamento, me informe: nome, telefone, modelo da impressora, produto desejado e quantidade. Se preferir, chame um atendente no WhatsApp.';
+  }
+
+  if(/toner|cartucho|fotocondutor|cilindro|impressora|suprimento|produto|hp|brother|canon|samsung|epson/i.test(msg)){
+    return 'Trabalhamos com toners, cartuchos, fotocondutores e suprimentos para impressão. Para localizar o produto certo, informe o modelo da impressora e a quantidade desejada.';
+  }
+
+  if(/entrega|frete|prazo|enviar|envio|receber/i.test(msg)){
+    return 'Sobre entregas: a C&C atende pedidos conforme disponibilidade e região. Para confirmar prazo e frete, informe seu endereço ou fale com o atendimento.';
+  }
+
+  if(/pix|pagamento|pagar|boleto|cartao/i.test(msg)){
+    return 'No site, o pagamento principal é via PIX. Após finalizar o pedido, siga as instruções de pagamento e acompanhe o status pelo código do pedido.';
+  }
+
+  if(/acompanhar|rastrear|status|codigo|código/i.test(msg)){
+    return 'Para acompanhar seu pedido, acesse o menu Acompanhar pedido e informe o código recebido na finalização da compra.';
+  }
+
+  if(/troca|devolu|garantia|defeito|erro/i.test(msg)){
+    return 'Para trocas, devoluções ou garantia, informe o número do pedido, produto, motivo e dados de contato. Nossa equipe vai orientar o procedimento.';
+  }
+
+  if(/horario|horário|abre|fecha|funciona/i.test(msg)){
+    return 'Nosso atendimento funciona de segunda a sexta, das 8h às 17h. Sábado e domingo fechado.';
+  }
+
+  if(/email|e-mail/i.test(msg)){
+    return 'Você pode falar com a C&C pelos e-mails vendas@cecvendas.com e garantia@cecvendas.com.';
+  }
+
+  return 'Posso ajudar com produtos, compras, pedidos, entregas, pagamentos, trocas, devoluções e atendimento da C&C. Para comprar, envie nome, telefone, modelo da impressora, produto e quantidade.';
+}
+
+function cecAddBotMessage(text, who='bot'){
+  const body = $('#cecChatBody');
+  if(!body) return;
+  const item = document.createElement('div');
+  item.className = `cec-chat-msg ${who === 'user' ? 'user' : 'bot'}`;
+  item.textContent = text;
+  body.appendChild(item);
+  body.scrollTop = body.scrollHeight;
+}
+
+function cecSendBotMessage(text){
+  const clean = (text || '').trim();
+  if(!clean) return;
+  cecAddBotMessage(clean, 'user');
+  setTimeout(() => cecAddBotMessage(cecBotAnswer(clean), 'bot'), 180);
+}
+
+function cecOpenWhatsAppFromChat(){
+  const body = $('#cecChatBody');
+  let transcript = '';
+  if(body){
+    transcript = Array.from(body.querySelectorAll('.cec-chat-msg')).slice(-8).map(el => {
+      const prefix = el.classList.contains('user') ? 'Cliente' : 'C&C';
+      return `${prefix}: ${el.textContent}`;
+    }).join('\n');
+  }
+  const text = encodeURIComponent(`Olá, vim pelo site da C&C Distribuidora e preciso de atendimento.\n\n${transcript}`);
+  window.open(`https://wa.me/${CEC_SUPPORT_WHATSAPP}?text=${text}`, '_blank', 'noopener');
+}
+
+function initCecChatWidget(){
+  if(location.pathname.includes('admin.html')) return;
+  if($('#cecChatWidget')) return;
+
+  const widget = document.createElement('div');
+  widget.id = 'cecChatWidget';
+  widget.className = 'cec-chat-widget';
+  widget.innerHTML = `
+    <button class="cec-chat-float" id="cecChatOpen" type="button" aria-label="Fale com a C&C">
+      <span>💬</span>
+      <strong>Fale com a C&C</strong>
+    </button>
+
+    <div class="cec-chat-panel hidden" id="cecChatPanel" aria-live="polite">
+      <div class="cec-chat-head">
+        <div>
+          <strong>Fale com a C&C</strong>
+          <small>Atendimento virtual</small>
+        </div>
+        <button type="button" id="cecChatClose" aria-label="Fechar atendimento">×</button>
+      </div>
+
+      <div class="cec-chat-body" id="cecChatBody"></div>
+
+      <div class="cec-chat-quick">
+        <button type="button" data-cec-quick="Quero comprar">Comprar</button>
+        <button type="button" data-cec-quick="Produtos">Produtos</button>
+        <button type="button" data-cec-quick="Entregas">Entregas</button>
+        <button type="button" data-cec-quick="Acompanhar pedido">Pedido</button>
+        <button type="button" data-cec-quick="Pagamento PIX">PIX</button>
+        <button type="button" data-cec-quick="Falar com atendente humano">Humano</button>
+      </div>
+
+      <form class="cec-chat-form" id="cecChatForm">
+        <input id="cecChatInput" placeholder="Digite sua dúvida..." autocomplete="off">
+        <button type="submit">Enviar</button>
+      </form>
+
+      <button class="cec-chat-whatsapp" id="cecChatWhatsapp" type="button">Chamar no WhatsApp</button>
+    </div>
+  `;
+
+  document.body.appendChild(widget);
+
+  const panel = $('#cecChatPanel');
+  const openBtn = $('#cecChatOpen');
+
+  openBtn?.addEventListener('click', () => {
+    panel?.classList.remove('hidden');
+    openBtn?.classList.add('hidden');
+    if(!$('#cecChatBody')?.dataset.started){
+      $('#cecChatBody').dataset.started = '1';
+      cecAddBotMessage('Olá! Sou o atendimento virtual da C&C Distribuidora. Como posso ajudar?');
+    }
+    setTimeout(() => $('#cecChatInput')?.focus(), 80);
+  });
+
+  $('#cecChatClose')?.addEventListener('click', () => {
+    panel?.classList.add('hidden');
+    openBtn?.classList.remove('hidden');
+  });
+
+  $('#cecChatForm')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const input = $('#cecChatInput');
+    const text = input?.value || '';
+    if(input) input.value = '';
+    cecSendBotMessage(text);
+  });
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-cec-quick]');
+    if(!btn) return;
+    cecSendBotMessage(btn.dataset.cecQuick || '');
+  });
+
+  $('#cecChatWhatsapp')?.addEventListener('click', cecOpenWhatsAppFromChat);
+}
+
+document.addEventListener('DOMContentLoaded', initCecChatWidget);

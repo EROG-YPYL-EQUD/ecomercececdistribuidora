@@ -1,0 +1,13 @@
+VERSÃO 103 - BOTÃO FALE COM A C&C
+
+Adicionado:
+- Botão flutuante "Fale com a C&C" nas páginas públicas.
+- Atendimento virtual simples, sem API e sem custo.
+- Respostas sobre produtos, compras, entregas, pedidos, PIX, troca/devolução e horário.
+- Botão para chamar no WhatsApp: (67) 3042-4796.
+
+Não aparece no Admin.
+Admin continua em:
+https://www.cecdistribuidora.com.br/admin.html
+
+Subir todos os arquivos no GitHub e aguardar Vercel Ready.

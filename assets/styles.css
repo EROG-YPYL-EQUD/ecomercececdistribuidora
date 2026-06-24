@@ -3732,3 +3732,153 @@ td{
   white-space:normal !important;
   overflow-wrap:anywhere !important;
 }
+
+
+/* V103 - Botão Fale com a C&C */
+.cec-chat-widget{
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  z-index:9999;
+  font-family:inherit;
+}
+.cec-chat-float{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  border:0;
+  border-radius:999px;
+  background:var(--brand);
+  color:#fff;
+  padding:13px 17px;
+  font-weight:900;
+  box-shadow:0 16px 38px rgba(0,0,0,.25);
+  cursor:pointer;
+}
+.cec-chat-float span{
+  font-size:20px;
+}
+.cec-chat-panel{
+  width:min(360px, calc(100vw - 28px));
+  background:#fff;
+  color:var(--text);
+  border:1px solid var(--line);
+  border-radius:22px;
+  box-shadow:0 22px 55px rgba(0,0,0,.28);
+  overflow:hidden;
+}
+.cec-chat-head{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  background:linear-gradient(135deg,#0b2a23,#17684f);
+  color:#fff;
+  padding:14px 15px;
+}
+.cec-chat-head strong{
+  display:block;
+  font-size:16px;
+}
+.cec-chat-head small{
+  display:block;
+  color:rgba(255,255,255,.75);
+  font-weight:700;
+  margin-top:2px;
+}
+.cec-chat-head button{
+  border:0;
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  font-size:22px;
+  line-height:1;
+  cursor:pointer;
+}
+.cec-chat-body{
+  height:250px;
+  overflow:auto;
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+  background:#fbfaf7;
+}
+.cec-chat-msg{
+  max-width:88%;
+  padding:10px 12px;
+  border-radius:15px;
+  font-size:14px;
+  line-height:1.35;
+  white-space:pre-wrap;
+}
+.cec-chat-msg.bot{
+  align-self:flex-start;
+  background:#fff;
+  border:1px solid var(--line);
+}
+.cec-chat-msg.user{
+  align-self:flex-end;
+  background:var(--brand);
+  color:#fff;
+}
+.cec-chat-quick{
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  padding:11px 12px 4px;
+  background:#fff;
+}
+.cec-chat-quick button{
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--brand);
+  border-radius:999px;
+  padding:7px 10px;
+  font-weight:900;
+  font-size:12px;
+  cursor:pointer;
+}
+.cec-chat-form{
+  display:flex;
+  gap:8px;
+  padding:10px 12px;
+  background:#fff;
+}
+.cec-chat-form input{
+  flex:1;
+  min-width:0;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:11px 12px;
+  outline:none;
+}
+.cec-chat-form button,
+.cec-chat-whatsapp{
+  border:0;
+  border-radius:999px;
+  background:var(--brand);
+  color:#fff;
+  font-weight:900;
+  padding:10px 13px;
+  cursor:pointer;
+}
+.cec-chat-whatsapp{
+  width:calc(100% - 24px);
+  margin:0 12px 12px;
+  background:#25d366;
+}
+@media(max-width:520px){
+  .cec-chat-widget{
+    right:12px;
+    bottom:12px;
+  }
+  .cec-chat-panel{
+    width:calc(100vw - 24px);
+  }
+  .cec-chat-body{
+    height:240px;
+  }
+}
