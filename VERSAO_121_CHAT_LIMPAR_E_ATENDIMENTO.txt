@@ -1,0 +1,16 @@
+VERSÃO 121 - CHAT LIMPAR E ATENDIMENTO GERAL
+
+Corrigido:
+- Comando "limpar", "apagar", "zerar", "novo atendimento" limpa a conversa.
+- "Acompanhar pedido" responde acompanhamento, não orçamento.
+- "Entrega" pede cidade/bairro/CEP.
+- Se o cliente envia CEP depois de entrega, responde sobre prazo/frete e não tenta buscar produto.
+- "Troca", "devolução" e "garantia" respondem atendimento correto.
+- "Pagamento" e "Pix" respondem pagamento.
+- Produto sem quantidade não vira orçamento automático.
+- Orçamento só aparece quando o cliente pede orçamento ou informa quantidade.
+- Cabeçalho mostra somente "Fale com a C&C".
+- Texto digitado continua preto.
+
+Importante:
+- Subir esta versão e testar com ?v=121 para sair do cache antigo v116.

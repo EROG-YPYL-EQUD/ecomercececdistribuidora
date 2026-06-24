@@ -1,0 +1,23 @@
+VERSÃO 122 - CACHE DO CHAT CORRIGIDO
+
+Correção principal:
+- HTML agora chama assets/app.js?v=122 e assets/styles.css?v=122 para não carregar JS antigo v115/v116 do cache.
+- Cabeçalho do chat fica somente "Fale com a C&C".
+- A escolha por número funciona:
+  Exemplo:
+  "orcamento"
+  "10 662xl"
+  IA lista:
+  1. Preto
+  2. Colorido
+  Cliente responde "2"
+  IA seleciona o item 2 e monta orçamento com 10 unidades.
+- "Acompanhar pedido" responde acompanhamento, não orçamento.
+- "Entrega" + CEP responde entrega/frete, não busca produto.
+- "Limpar" limpa a conversa.
+- Texto digitado no chat fica preto.
+
+Depois de subir:
+- Esperar Vercel ficar Ready.
+- Abrir https://www.cecdistribuidora.com.br/?v=122
+- Dar Ctrl+F5.

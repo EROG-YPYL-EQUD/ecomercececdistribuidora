@@ -1587,21 +1587,22 @@ function notifyCartAddedV110(){
   }, true);
 })();
 
-/* V115 - Atendimento C&C: busca por código com prefixo TN/DR/CF/CE/MLT */
+/* V122 - Atendimento C&C: limpar chat, pedidos, entrega e produto sem orçamento automático */
 (function(){
-  if(window.__CEC_VENDAS_IA_V115__) return;
-  window.__CEC_VENDAS_IA_V115__ = true;
+  if(window.__CEC_VENDAS_IA_V122__) return;
+  window.__CEC_VENDAS_IA_V122__ = true;
 
-  const ROOT_ID = 'cecSalesAiV115';
+  const ROOT_ID = 'cecSalesAiV122';
   const WHATSAPP = '556730424796';
 
   let lastMessage = '';
   let lastTime = 0;
 
   let pendingProducts = [];
-  let pendingCode = '';
   let pendingQty = 0;
   let pendingProduct = null;
+  let pendingMode = 'product';
+  let pendingTopic = '';
 
   function clean(v){
     return String(v || '')
@@ -1629,19 +1630,62 @@ function notifyCartAddedV110(){
     return [];
   }
 
+  function wantsQuote(text){
+    const q = clean(text);
+    return /\b(orcamento|orçamento|cotacao|cotação|cotar|quote)\b/.test(q);
+  }
+
+  function isClear(text){
+    const q = clean(text);
+    return /^(limpar|limpa|apagar|apaga|zerar|zera|novo atendimento|reiniciar|recomeçar|recomecar|começar de novo|comecar de novo)$/.test(q);
+  }
+
+  function isTracking(text){
+    const q = clean(text);
+    return /\b(acompanhar|rastrear|rastreamento|status|codigo do pedido|código do pedido|meu pedido|pedido)\b/.test(q) && !/\b(orcamento|orçamento|comprar|compra|quero|preciso)\b/.test(q);
+  }
+
+  function isDelivery(text){
+    const q = clean(text);
+    return /\b(entrega|frete|prazo|envio|receber|retirada|transportadora)\b/.test(q);
+  }
+
+  function isPayment(text){
+    const q = clean(text);
+    return /\b(pix|pagamento|pagar|boleto|cartao|cartão|dinheiro)\b/.test(q);
+  }
+
+  function isExchange(text){
+    const q = clean(text);
+    return /\b(troca|trocar|devolucao|devolução|devolver|garantia|defeito|problema)\b/.test(q);
+  }
+
+  function isHuman(text){
+    const q = clean(text);
+    return /\b(humano|atendente|vendedor|pessoa|whats|whatsapp|zap|telefone|contato)\b/.test(q);
+  }
+
+  function isCep(text){
+    const digits = String(text || '').replace(/\D/g, '');
+    return digits.length === 8 ? digits : '';
+  }
+
   function qtyFrom(text){
     const q = clean(text);
 
-    let m = q.match(/\b(\d{1,4})\s*(unidades|unidade|unds|und|un|pecas|peças|pcs|cx|caixas|caixa)\b/);
+    let m = q.match(/\b(\d{1,4})\s*(unidades|unidade|unids?|unid|unds?|und|un|pecas|peças|peca|peça|pcs|cx|caixas|caixa)\b/);
     if(m) return Number(m[1]);
 
-    m = q.match(/\b(\d{1,4})\s+(do|da|de)\s+[a-z0-9\-]{2,}\b/);
+    m = q.match(/\b(\d{1,4})\b(?:\s+\w+){0,3}\s+(do|da|de)\s+[a-z0-9\-]{2,}\b/);
+    if(m) return Number(m[1]);
+
+    m = q.match(/\b(\d{1,4})\s+(?=(?:tn|dr|cf|ce|q|mlt|d)?[- ]?\d{3,5}[a-z0-9]*\b)/);
     if(m) return Number(m[1]);
 
     m = q.match(/\b(qtd|quantidade)\s*(\d{1,4})\b/);
     if(m) return Number(m[2]);
 
-    if(/^\d{1,4}$/.test(q) && (pendingProduct || pendingProducts.length)) return Number(q);
+    if(/^\d{1,4}$/.test(q) && pendingProduct) return Number(q);
 
     return 0;
   }
@@ -1650,8 +1694,8 @@ function notifyCartAddedV110(){
     const q = clean(text);
     const qty = qtyFrom(text);
     const stop = new Set([
-      'pedido','pedi','pedir','quero','preciso','orcamento','cotacao','comprar','valor','preco',
-      'unidade','unidades','unds','und','un','pecas','peças','pcs','cx','caixa','caixas',
+      'pedido','pedi','pedir','quero','preciso','orcamento','orçamento','cotacao','cotação','comprar','valor','preco','preço',
+      'unidade','unidades','unids','unid','unds','und','un','pecas','peças','pcs','cx','caixa','caixas',
       'do','da','de','para','pra','pro','com','sem','modelo','impressora','produto','toner','cartucho'
     ]);
 
@@ -1662,7 +1706,6 @@ function notifyCartAddedV110(){
       if(stop.has(w)) return;
       if(qty && String(qty) === w) return;
 
-      // Prefixo separado: "tn 1060", "dr 1060", "cf 283"
       if(/^(tn|dr|cf|ce|q|mlt|d)$/.test(w) && parts[i+1] && /^\d{2,5}[a-z0-9]*$/.test(parts[i+1])){
         const combined = w + parts[i+1];
         if(!codes.includes(combined)) codes.push(combined);
@@ -1741,8 +1784,6 @@ function notifyCartAddedV110(){
     const target = nameSku(p).replace(/\s+/g, ' ');
     const compactTarget = target.replace(/[-\s]/g, '');
 
-    // Código com prefixo: TN1060, TN-1060, DR1060, DR-1060.
-    // Aqui precisa bater o prefixo certo.
     if(isPrefixCode(c)){
       const compactCode = c.replace(/[-\s]/g, '');
       if(compactTarget.includes(compactCode)) return true;
@@ -1755,16 +1796,10 @@ function notifyCartAddedV110(){
       return rx.test(target);
     }
 
-    // Código numérico curto (1060, 954, 204):
-    // bate em nome/SKU/categoria com número sozinho OU com prefixo conhecido antes.
-    // Ex.: 1060 encontra TN1060 e DR1060.
-    // Não usa compatibilidade para não puxar produto errado.
     if(/^\d{2,5}[a-z]*$/.test(c)){
       const number = c.match(/\d{2,5}/)[0];
-
       const standalone = new RegExp('(^|[^a-z0-9])' + number + '([a-z]{0,3})([^a-z0-9]|$)', 'i');
       const prefixed = new RegExp('(^|[^a-z0-9])(tn|dr|cf|ce|q|mlt|d)[- ]?' + number + '([a-z0-9]*)([^a-z0-9]|$)', 'i');
-
       return standalone.test(target) || prefixed.test(target);
     }
 
@@ -1790,9 +1825,8 @@ function notifyCartAddedV110(){
       });
 
       const pk = kindProduct(p);
-
-      // Se o cliente digitou TN1060, prioriza toner; se DR1060, prioriza fotocondutor.
       const codeText = clean(codes.join(' '));
+
       if(/\btn[- ]?\d+/.test(codeText) && pk === 'toner') score += 35;
       if(/\bdr[- ]?\d+/.test(codeText) && pk === 'fotocondutor') score += 35;
       if(/\btn[- ]?\d+/.test(codeText) && pk && pk !== 'toner') score -= 120;
@@ -1815,8 +1849,9 @@ function notifyCartAddedV110(){
       'ola','bom','boa','dia','tarde','noite','voce','voces','tem','tenho','queria',
       'quero','preciso','saber','qual','quais','produto','produtos','serve','servem',
       'impressora','modelo','para','pra','pro','uma','umas','uns','com','sem','valor',
-      'preco','orcamento','cotacao','comprar','compra','compatível','compativel',
-      'toner','cartucho','cilindro','fotocondutor','tinta','pedido','pedi','unidades','unidade','und','un'
+      'preco','preço','orcamento','orçamento','cotacao','cotação','comprar','compra',
+      'compatível','compativel','toner','cartucho','cilindro','fotocondutor','tinta',
+      'pedido','pedi','unidades','unidade','und','un','entrega','frete','prazo','cep'
     ]);
     const words = q.split(' ').filter(w => w.length >= 3 && !stop.has(w) && !/^\d+$/.test(w));
     if(!words.length) return [];
@@ -1858,7 +1893,7 @@ function notifyCartAddedV110(){
   }
 
   function addText(text, who){
-    const body = document.getElementById('cecSalesAiBody115');
+    const body = document.getElementById('cecSalesAiBody122');
     if(!body || !text) return;
     const div = document.createElement('div');
     div.className = 'cec-sales-msg ' + who;
@@ -1867,21 +1902,25 @@ function notifyCartAddedV110(){
     body.scrollTop = body.scrollHeight;
   }
 
-  function showChoices(list, originalText){
-    const body = document.getElementById('cecSalesAiBody115');
+  function clearChat(){
+    const body = document.getElementById('cecSalesAiBody122');
+    if(body) body.innerHTML = '';
+    clearPending();
+    pendingTopic = '';
+    addText('Atendimento limpo. Pode digitar uma nova pergunta.', 'bot');
+  }
+
+  function showChoices(list, originalText, mode){
+    const body = document.getElementById('cecSalesAiBody122');
     if(!body || !list.length) return;
 
     const qty = qtyFrom(originalText);
     const codes = extractCodes(originalText);
-    const hasPrefix = codes.some(isPrefixCode);
+    const isQuote = mode === 'quote';
 
-    const intro = qty
+    const intro = isQuote && qty
       ? `Para montar o orçamento de ${qty} unidade${qty > 1 ? 's' : ''}${codes.length ? ' do código ' + codes.join(', ').toUpperCase() : ''}, preciso saber qual opção você quer:`
       : `Encontrei opções para ${codes.length ? 'o código ' + codes.join(', ').toUpperCase() : 'sua busca'}. Qual delas você deseja?`;
-
-    const help = hasPrefix
-      ? 'Responda com a opção desejada ou informe a quantidade. Exemplo: “2 unidades”.'
-      : 'Responda com o modelo/tipo. Exemplo: “TN1060”, “DR1060”, “1060 toner” ou “1060 fotocondutor”.';
 
     const wrap = document.createElement('div');
     wrap.className = 'cec-sales-results';
@@ -1893,16 +1932,18 @@ function notifyCartAddedV110(){
           <small>${esc([kindProduct(p), productColor(p), p.sku ? 'Cód.: '+p.sku : '', money(p.price)].filter(Boolean).join(' • '))}</small>
         </article>
       `).join('')}
-      <div class="cec-sales-msg bot">${esc(help)}</div>
+      <div class="cec-sales-msg bot">Responda pelo número da opção ou pelo modelo/cor. Exemplo: “1”, “2”, “preto”, “colorido”, “TN1060” ou “DR1060”.</div>
     `;
     body.appendChild(wrap);
     body.scrollTop = body.scrollHeight;
   }
 
-  function showProductNeedQty(product){
+  function showProduct(product){
     pendingProduct = product;
-    const body = document.getElementById('cecSalesAiBody115');
+    const body = document.getElementById('cecSalesAiBody122');
     if(!body) return;
+
+    const stock = Number(product.stock || 0);
 
     const wrap = document.createElement('div');
     wrap.className = 'cec-sales-results';
@@ -1911,12 +1952,11 @@ function notifyCartAddedV110(){
       <article class="cec-sales-product">
         <strong>${esc(product.name)}</strong>
         <small>${esc([product.category, product.sku ? 'Cód.: '+product.sku : '', product.brand].filter(Boolean).join(' • '))}</small>
-        <div>
-          <b>${money(product.price)}</b>
-          <span>${Number(product.stock || 0) > 0 ? 'Estoque: '+esc(product.stock) : 'Estoque sob consulta'}</span>
-        </div>
+        <div><b>Valor:</b><span>${money(product.price)}</span></div>
+        <div><b>Estoque:</b><span>${stock > 0 ? esc(stock) : 'sob consulta'}</span></div>
+        <button type="button" data-cec-ai-add="${esc(product.id)}" data-cec-ai-qty="1">Adicionar 1 ao carrinho</button>
       </article>
-      <div class="cec-sales-msg bot">Qual quantidade você deseja para montar o orçamento?</div>
+      <div class="cec-sales-msg bot">Para orçamento, informe a quantidade. Exemplo: “10 unidades”.</div>
     `;
 
     body.appendChild(wrap);
@@ -1924,7 +1964,7 @@ function notifyCartAddedV110(){
   }
 
   function showQuote(product, qty){
-    const body = document.getElementById('cecSalesAiBody115');
+    const body = document.getElementById('cecSalesAiBody122');
     if(!body || !product || !qty) return;
 
     const total = Number(product.price || 0) * qty;
@@ -1950,25 +1990,57 @@ function notifyCartAddedV110(){
     body.scrollTop = body.scrollHeight;
   }
 
-  function fallback(text){
-    const q = clean(text);
-    const codes = extractCodes(text);
+  function clearPending(){
+    pendingProducts = [];
+    pendingQty = 0;
+    pendingProduct = null;
+    pendingMode = 'product';
+  }
 
-    if(/orcamento|cotacao|preco|valor|pedido|pedi|comprar|quero|preciso/.test(q) && !codes.length){
-      return 'Claro. Para montar o orçamento, me informe: modelo/código do produto e quantidade. Exemplo: “10 unidades do TN1060” ou “2 DR1060”.';
+  function answerService(text){
+    const cep = isCep(text);
+
+    if(isClear(text)){
+      clearChat();
+      return true;
     }
 
-    if(codes.length){
-      return `Não encontrei item exato para ${codes.join(', ').toUpperCase()} no catálogo carregado agora. Tente sem hífen ou informe o tipo, exemplo: TN1060, DR1060 ou 1060 toner.`;
+    if(pendingTopic === 'delivery' && cep){
+      addText(`Recebi o CEP ${cep.replace(/(\d{5})(\d{3})/, '$1-$2')}. Para confirmar prazo e frete, informe também os produtos desejados ou chame a C&C no WhatsApp.`, 'bot');
+      return true;
     }
 
-    if(/entrega|frete|prazo|envio|receber/.test(q)) return 'Para entrega/frete, informe cidade, bairro ou CEP.';
-    if(/pix|pagamento|pagar|boleto|cartao|dinheiro/.test(q)) return 'O pagamento principal pelo site é via PIX.';
-    if(/acompanhar|rastrear|status|codigo|meu pedido/.test(q)) return 'Acesse “Acompanhar pedido” no menu e informe o código recebido.';
-    if(/troca|devolucao|garantia|defeito|problema/.test(q)) return 'Para troca, devolução ou garantia, envie número do pedido, produto, motivo e telefone.';
-    if(/humano|atendente|whats|whatsapp|zap|telefone|contato/.test(q)) return 'Clique em “Chamar no WhatsApp” para falar com a C&C pelo (67) 3042-4796.';
+    if(isTracking(text)){
+      addText('Para acompanhar seu pedido, acesse “Acompanhar pedido” no menu e informe o código recebido na finalização. Também posso encaminhar para o WhatsApp da C&C.', 'bot');
+      pendingTopic = '';
+      return true;
+    }
 
-    return 'Digite código/modelo e quantidade. Exemplo: “1060”, “TN1060”, “DR1060” ou “2 toners TN1060”.';
+    if(isDelivery(text)){
+      addText('Para entrega/frete, informe cidade, bairro ou CEP. A C&C confirma prazo conforme região, produto e disponibilidade.', 'bot');
+      pendingTopic = 'delivery';
+      return true;
+    }
+
+    if(isPayment(text)){
+      addText('O pagamento principal pelo site é via PIX. Após finalizar o pedido, o site mostra as informações para pagamento e acompanhamento.', 'bot');
+      pendingTopic = '';
+      return true;
+    }
+
+    if(isExchange(text)){
+      addText('Para troca, devolução ou garantia, envie número do pedido, produto, motivo e telefone para retorno. Também pode chamar a C&C no WhatsApp.', 'bot');
+      pendingTopic = '';
+      return true;
+    }
+
+    if(isHuman(text)){
+      addText('Clique em “Chamar no WhatsApp” para falar com a C&C pelo (67) 3042-4796.', 'bot');
+      pendingTopic = '';
+      return true;
+    }
+
+    return false;
   }
 
   function send(text){
@@ -1983,80 +2055,120 @@ function notifyCartAddedV110(){
     addText(msg, 'user');
 
     setTimeout(() => {
-      const qty = qtyFrom(msg);
-      const codes = extractCodes(msg);
-      const variant = requestedVariant(msg);
-      const hasPrefixedInput = codes.some(isPrefixCode);
+      if(answerService(msg)) return;
 
-      // Se respondeu tipo/modelo depois de pergunta anterior
-      if(pendingProducts.length && codes.length){
-        let selected = searchCatalog(msg);
-        if(!selected.length){
-          const q = clean(msg);
-          if(/\btoner\b|\btn[- ]?\d+/.test(q)) selected = pendingProducts.filter(p => kindProduct(p) === 'toner');
-          if(/\bfotocondutor\b|\bcilindro\b|\bdr[- ]?\d+/.test(q)) selected = pendingProducts.filter(p => kindProduct(p) === 'fotocondutor');
-        }
-        if(selected.length === 1){
-          if(pendingQty) showQuote(selected[0], pendingQty);
-          else showProductNeedQty(selected[0]);
-          pendingProducts = [];
-          pendingCode = '';
-          pendingQty = 0;
+      const q = clean(msg);
+
+      // Responder pelo número da opção.
+      if(pendingProducts.length && /^\d{1,2}$/.test(q)){
+        const idx = Number(q) - 1;
+        if(idx >= 0 && idx < pendingProducts.length){
+          const selected = pendingProducts[idx];
+          const qtySaved = pendingQty || 0;
+          const modeSaved = pendingMode;
+          clearPending();
+
+          if(qtySaved && modeSaved === 'quote') showQuote(selected, qtySaved);
+          else showProduct(selected);
           return;
         }
       }
 
-      // Se respondeu só quantidade depois de um produto único
+      const qty = qtyFrom(msg);
+      const codes = extractCodes(msg);
+      const variant = requestedVariant(msg);
+
+      // Responder só cor/modelo depois de uma lista.
+      if(pendingProducts.length && variant && !codes.length){
+        const selected = filterByVariant(pendingProducts, msg);
+        if(selected.length === 1){
+          const qtySaved = pendingQty || 0;
+          const modeSaved = pendingMode;
+          clearPending();
+          if(qtySaved && modeSaved === 'quote') showQuote(selected[0], qtySaved);
+          else showProduct(selected[0]);
+          return;
+        }
+      }
+
+      // Responder só tipo depois de uma lista.
+      if(pendingProducts.length && !codes.length){
+        let selected = [];
+        if(/\btoner\b/.test(q)) selected = pendingProducts.filter(p => kindProduct(p) === 'toner');
+        if(/\bfotocondutor\b|\bcilindro\b/.test(q)) selected = pendingProducts.filter(p => kindProduct(p) === 'fotocondutor');
+        if(selected.length === 1){
+          const qtySaved = pendingQty || 0;
+          const modeSaved = pendingMode;
+          clearPending();
+          if(qtySaved && modeSaved === 'quote') showQuote(selected[0], qtySaved);
+          else showProduct(selected[0]);
+          return;
+        }
+      }
+
+      // Responder TN1060/DR1060 depois de lista.
+      if(pendingProducts.length && codes.length){
+        let selected = searchCatalog(msg);
+        if(selected.length === 1){
+          const qtySaved = pendingQty || qty || 0;
+          const modeSaved = pendingMode;
+          clearPending();
+          if(qtySaved && modeSaved === 'quote') showQuote(selected[0], qtySaved);
+          else showProduct(selected[0]);
+          return;
+        }
+      }
+
+      // Responder só quantidade depois de produto único.
       if(pendingProduct && qty && !codes.length && !variant){
-        showQuote(pendingProduct, qty);
+        const selected = pendingProduct;
         pendingProduct = null;
+        showQuote(selected, qty);
         return;
       }
 
       let found = searchCatalog(msg);
+
       if(found.length && variant){
         const filtered = filterByVariant(found, msg);
         if(filtered.length) found = filtered;
       }
 
-      // Código numérico genérico com várias opções, como 1060:
-      // pergunta se é TN1060, DR1060 etc.
-      if(found.length > 1 && codes.length && !variant && !hasPrefixedInput){
-        pendingProducts = found;
-        pendingCode = codes[0] || '';
-        pendingQty = qty || 0;
-        pendingProduct = null;
-        showChoices(found, msg);
-        return;
-      }
+      const quoteMode = wantsQuote(msg) || qty > 0;
 
-      // Código com prefixo e encontrou mais de um produto: mostra opções já filtradas.
-      if(found.length > 1 && codes.length && hasPrefixedInput){
+      if(found.length > 1 && codes.length && !variant){
         pendingProducts = found;
-        pendingCode = codes[0] || '';
         pendingQty = qty || 0;
         pendingProduct = null;
-        showChoices(found, msg);
+        pendingMode = quoteMode ? 'quote' : 'product';
+        showChoices(found, msg, pendingMode);
         return;
       }
 
       if(found.length === 1){
-        if(qty) showQuote(found[0], qty);
-        else showProductNeedQty(found[0]);
+        if(quoteMode && qty) showQuote(found[0], qty);
+        else showProduct(found[0]);
         return;
       }
 
       if(found.length > 1){
-        showChoices(found, msg);
+        pendingProducts = found;
+        pendingQty = qty || 0;
+        pendingMode = quoteMode ? 'quote' : 'product';
+        showChoices(found, msg, pendingMode);
         return;
       }
 
-      addText(fallback(msg), 'bot');
+      if(wantsQuote(msg)){
+        addText('Claro. Para montar o orçamento, me informe modelo/código do produto e quantidade. Exemplo: “10 unidades do 954 preto”, “10 954” ou “2 TN1060”.', 'bot');
+      }else{
+        addText('Digite o código/modelo do produto. Para orçamento, envie também a quantidade. Exemplo: “954 preto”, “10 954” ou “2 TN1060”.', 'bot');
+      }
     }, 150);
   }
 
   function openWhatsapp(){
-    const body = document.getElementById('cecSalesAiBody115');
+    const body = document.getElementById('cecSalesAiBody122');
     const history = body ? Array.from(body.querySelectorAll('.cec-sales-msg')).slice(-10).map(el => {
       return (el.classList.contains('user') ? 'Cliente: ' : 'C&C: ') + el.textContent;
     }).join('\n') : '';
@@ -2065,7 +2177,7 @@ function notifyCartAddedV110(){
   }
 
   function removeOldBots(){
-    ['cecChatWidget','cecSmartBotV106','cecBotV106','cecAssistV107','cecAssistantV108','cecSalesAiV109','cecSalesAiV111','cecSalesAiV112','cecSalesAiV113','cecSalesAiV114','cecSalesAiV115'].forEach(id => {
+    ['cecChatWidget','cecSmartBotV106','cecBotV106','cecAssistV107','cecAssistantV108','cecSalesAiV109','cecSalesAiV111','cecSalesAiV112','cecSalesAiV113','cecSalesAiV114','cecSalesAiV115','cecSalesAiV118','cecSalesAiV120','cecSalesAiV121','cecSalesAiV122'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.remove();
     });
@@ -2080,56 +2192,55 @@ function notifyCartAddedV110(){
     root.id = ROOT_ID;
     root.className = 'cec-sales-ai';
     root.innerHTML = `
-      <button class="cec-sales-open" id="cecSalesAiOpen115" type="button" aria-label="Fale com a C&C">
+      <button class="cec-sales-open" id="cecSalesAiOpen122" type="button" aria-label="Fale com a C&C">
         <span>💬</span>
         <strong>Fale com a C&C</strong>
       </button>
 
-      <section class="cec-sales-panel hidden" id="cecSalesAiPanel115">
+      <section class="cec-sales-panel hidden" id="cecSalesAiPanel122">
         <header>
           <div>
             <strong>Fale com a C&C</strong>
-            <small>Atendimento de vendas • v116</small>
           </div>
-          <button type="button" id="cecSalesAiClose115" aria-label="Fechar">×</button>
+          <button type="button" id="cecSalesAiClose122" aria-label="Fechar">×</button>
         </header>
 
-        <main id="cecSalesAiBody115" class="cec-sales-body"></main>
+        <main id="cecSalesAiBody122" class="cec-sales-body"></main>
 
-        <form id="cecSalesAiForm115" class="cec-sales-form">
-          <input id="cecSalesAiInput115" placeholder="Ex.: 1060, TN1060 ou DR1060..." autocomplete="off">
+        <form id="cecSalesAiForm122" class="cec-sales-form">
+          <input id="cecSalesAiInput122" placeholder="Ex.: 954 preto, entrega, acompanhar pedido..." autocomplete="off">
           <button type="submit">Enviar</button>
         </form>
 
-        <button class="cec-sales-wpp" id="cecSalesAiWpp115" type="button">Chamar no WhatsApp</button>
+        <button class="cec-sales-wpp" id="cecSalesAiWpp122" type="button">Chamar no WhatsApp</button>
       </section>
     `;
 
     document.body.appendChild(root);
 
-    const open = document.getElementById('cecSalesAiOpen115');
-    const panel = document.getElementById('cecSalesAiPanel115');
+    const open = document.getElementById('cecSalesAiOpen122');
+    const panel = document.getElementById('cecSalesAiPanel122');
 
     open.addEventListener('click', () => {
       panel.classList.remove('hidden');
       open.classList.add('hidden');
-      const body = document.getElementById('cecSalesAiBody115');
+      const body = document.getElementById('cecSalesAiBody122');
       if(!body.dataset.started){
         body.dataset.started = '1';
-        addText('Olá! Para orçamento, digite código/modelo e quantidade. Exemplo: “1060”, “TN1060”, “DR1060” ou “2 toners TN1060”.', 'bot');
+        addText('Olá! Posso ajudar com produtos, orçamento, entrega, pagamento, trocas/devoluções ou acompanhar pedido.', 'bot');
       }
-      setTimeout(() => document.getElementById('cecSalesAiInput115')?.focus(), 80);
+      setTimeout(() => document.getElementById('cecSalesAiInput122')?.focus(), 80);
     });
 
-    document.getElementById('cecSalesAiClose115').addEventListener('click', () => {
+    document.getElementById('cecSalesAiClose122').addEventListener('click', () => {
       panel.classList.add('hidden');
       open.classList.remove('hidden');
     });
 
-    document.getElementById('cecSalesAiForm115').addEventListener('submit', e => {
+    document.getElementById('cecSalesAiForm122').addEventListener('submit', e => {
       e.preventDefault();
       e.stopPropagation();
-      const input = document.getElementById('cecSalesAiInput115');
+      const input = document.getElementById('cecSalesAiInput122');
       send(input.value);
       input.value = '';
     });
@@ -2153,7 +2264,7 @@ function notifyCartAddedV110(){
       }
     });
 
-    document.getElementById('cecSalesAiWpp115').addEventListener('click', openWhatsapp);
+    document.getElementById('cecSalesAiWpp122').addEventListener('click', openWhatsapp);
   }
 
   if(document.readyState === 'loading'){

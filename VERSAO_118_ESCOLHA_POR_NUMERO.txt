@@ -1,0 +1,15 @@
+VERSÃO 118 - ESCOLHA POR NÚMERO NO CHAT
+
+Corrigido:
+- O cliente pode responder 1, 2, 3, 4 etc. quando a IA listar opções.
+- Exemplo:
+  "quero 10 954" -> IA lista as opções.
+  Cliente responde "4" -> IA seleciona a opção 4 e monta orçamento com 10 unidades.
+- Também aceita resposta por cor/modelo: preto, ciano, amarelo, magenta, TN1060, DR1060.
+- A mensagem da IA agora orienta: "Responda pelo número da opção ou pelo modelo/cor".
+- "10 954" agora entende quantidade 10 e código 954.
+- Texto digitado no chat continua preto.
+- Cabeçalho mostra v118.
+
+Base:
+- versão 116, sem a tolerância extra da v117 para erro "uniudades".

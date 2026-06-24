@@ -1,0 +1,10 @@
+VERSÃO 119 - CABEÇALHO DO CHAT LIMPO
+
+Corrigido:
+- No chat aparece somente "Fale com a C&C".
+- Removido "Atendimento de vendas • v116/v118" do cabeçalho.
+- Mantida a lógica da versão 118:
+  - escolha por número;
+  - "10 954";
+  - texto digitado preto;
+  - carrinho não abre automaticamente.

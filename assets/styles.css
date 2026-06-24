@@ -3761,7 +3761,7 @@ td{
   }
 }
 
-/* V115 - Atendimento de vendas C&C com busca por prefixo */
+/* V121 - Atendimento C&C limpo e atendimento geral */
 .cec-sales-ai{
   position:fixed;
   right:18px;
@@ -3801,8 +3801,12 @@ td{
   color:#fff;
   padding:14px 15px;
 }
-.cec-sales-panel header strong{display:block;font-size:16px}
-.cec-sales-panel header small{display:block;color:rgba(255,255,255,.78);font-weight:700;margin-top:2px}
+.cec-sales-panel header strong{
+  display:block;
+  font-size:16px;
+  margin:0 !important;
+}
+.cec-sales-panel header small{display:none !important}
 .cec-sales-panel header button{
   border:0;
   background:rgba(255,255,255,.12);
@@ -3856,7 +3860,23 @@ td{
   cursor:pointer;
 }
 .cec-sales-form{display:flex;gap:8px;padding:10px 12px;background:#fff}
-.cec-sales-form input{flex:1;min-width:0;border:1px solid var(--line);border-radius:999px;padding:11px 12px;outline:none}
+.cec-sales-form input,
+#cecSalesAiInput121{
+  flex:1;
+  min-width:0;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:11px 12px;
+  outline:none;
+  color:#111 !important;
+  background:#fff !important;
+  caret-color:#111 !important;
+}
+.cec-sales-form input::placeholder,
+#cecSalesAiInput121::placeholder{
+  color:#777 !important;
+  opacity:1 !important;
+}
 .cec-sales-form button,.cec-sales-wpp{border:0;border-radius:999px;background:var(--brand);color:#fff;font-weight:900;padding:10px 13px;cursor:pointer}
 .cec-sales-wpp{width:calc(100% - 24px);margin:0 12px 12px;background:#25d366}
 @media(max-width:520px){
@@ -3866,17 +3886,31 @@ td{
 }
 
 
-/* V116 - Texto digitado no chat em preto */
+/* V122 - Força chat novo e oculta subtítulo antigo */
+.cec-sales-panel header small,
+.cec-bot header small,
+.cec-assistant header small,
+.cec-chat-widget header small{
+  display:none !important;
+}
 .cec-sales-form input,
-#cecSalesAiInput115,
-#cecSalesAiInput116{
+#cecSalesAiInput122,
+#cecSalesAiInput121,
+#cecSalesAiInput120,
+#cecSalesAiInput118,
+#cecSalesAiInput116,
+#cecSalesAiInput115{
   color:#111 !important;
   background:#fff !important;
   caret-color:#111 !important;
 }
 .cec-sales-form input::placeholder,
-#cecSalesAiInput115::placeholder,
-#cecSalesAiInput116::placeholder{
+#cecSalesAiInput122::placeholder,
+#cecSalesAiInput121::placeholder,
+#cecSalesAiInput120::placeholder,
+#cecSalesAiInput118::placeholder,
+#cecSalesAiInput116::placeholder,
+#cecSalesAiInput115::placeholder{
   color:#777 !important;
   opacity:1 !important;
 }

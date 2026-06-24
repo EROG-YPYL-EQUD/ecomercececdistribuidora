@@ -1,0 +1,15 @@
+VERSÃO 120 - PRODUTO NÃO VIRA ORÇAMENTO AUTOMÁTICO
+
+Corrigido:
+- Se o cliente digita só um produto/código, a IA mostra produto, preço, estoque e botão adicionar 1.
+- Não monta orçamento automático para qualquer produto.
+- Orçamento só aparece quando:
+  1) o cliente pede orçamento; ou
+  2) o cliente informa quantidade.
+- Exemplo:
+  "954 preto" -> mostra produto, preço e estoque.
+  "10 954" -> pergunta qual opção e depois monta orçamento.
+  "quero orçamento do 954" -> pergunta qual opção para montar orçamento.
+- Mantida escolha por número.
+- Mantido texto preto no campo do chat.
+- Cabeçalho mostra somente "Fale com a C&C".
