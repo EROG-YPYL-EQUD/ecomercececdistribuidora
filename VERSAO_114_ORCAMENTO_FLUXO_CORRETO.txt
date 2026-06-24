@@ -1,0 +1,13 @@
+VERSÃO 114 - ORÇAMENTO COM FLUXO CORRETO
+
+Regras aplicadas:
+1. "quero orçamento" -> pergunta produto/modelo e quantidade.
+2. "quero orçamento do 954" -> mostra opções do 954 e pergunta cor/modelo.
+3. "quero 10 do 954" -> pergunta qual cor/modelo para as 10 unidades.
+4. "954 preto" -> mostra produto e pergunta quantidade.
+5. "10 unidades do 954 preto" -> mostra orçamento estimado com unitário, total, estoque e botão adicionar.
+6. Se o cliente escolhe uma cor após a pergunta, a IA aproveita a quantidade anterior.
+7. 954 continua não puxando 662XL.
+8. Carrinho não abre automaticamente.
+
+Cabeçalho do chat mostra v114.

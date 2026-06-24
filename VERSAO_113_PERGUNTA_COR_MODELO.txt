@@ -1,0 +1,11 @@
+VERSÃO 113 - IA PERGUNTA COR/MODELO QUANDO CÓDIGO É GENÉRICO
+
+Correção:
+- Se o cliente digitar só "954", a IA NÃO mostra carrinho direto.
+- Se digitar "quero 10 do 954", também pergunta a cor/modelo antes.
+- Mostra opções encontradas e pede: preto, ciano, amarelo, magenta ou kit.
+- Só mostra botão de adicionar ao carrinho quando o cliente especifica, exemplo:
+  "954 preto"
+  "10 unidades do 954 ciano"
+- Mantém busca exata: 954 não puxa 662XL.
+- Cabeçalho mostra v113 para confirmar que carregou.

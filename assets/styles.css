@@ -3761,7 +3761,7 @@ td{
   }
 }
 
-/* V112 - Atendimento de vendas C&C exato */
+/* V114 - Atendimento de vendas C&C fluxo correto de orçamento */
 .cec-sales-ai{
   position:fixed;
   right:18px;
@@ -3815,7 +3815,7 @@ td{
   cursor:pointer;
 }
 .cec-sales-body{
-  height:330px;
+  height:340px;
   overflow:auto;
   padding:14px;
   display:flex;
@@ -3834,7 +3834,7 @@ td{
 .cec-sales-msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--line)}
 .cec-sales-msg.user{align-self:flex-end;background:var(--brand);color:#fff}
 .cec-sales-results{display:flex;flex-direction:column;gap:9px}
-.cec-sales-product{
+.cec-sales-product,.cec-sales-choice{
   background:#fff;
   border:1px solid var(--line);
   border-radius:16px;
@@ -3842,8 +3842,8 @@ td{
   display:grid;
   gap:6px;
 }
-.cec-sales-product strong{color:var(--brand);font-size:14px;line-height:1.25}
-.cec-sales-product small,.cec-sales-product em,.cec-sales-product span{color:var(--muted);font-size:12px;font-style:normal}
+.cec-sales-product strong,.cec-sales-choice strong{color:var(--brand);font-size:14px;line-height:1.25}
+.cec-sales-product small,.cec-sales-product em,.cec-sales-product span,.cec-sales-choice small{color:var(--muted);font-size:12px;font-style:normal}
 .cec-sales-product div{display:flex;justify-content:space-between;gap:10px;align-items:center}
 .cec-sales-product b{color:var(--text);font-size:14px}
 .cec-sales-product button{
@@ -3862,5 +3862,5 @@ td{
 @media(max-width:520px){
   .cec-sales-ai{right:12px;bottom:12px}
   .cec-sales-panel{width:calc(100vw - 24px)}
-  .cec-sales-body{height:290px}
+  .cec-sales-body{height:295px}
 }

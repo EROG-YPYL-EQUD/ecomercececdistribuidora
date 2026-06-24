@@ -1587,15 +1587,21 @@ function notifyCartAddedV110(){
   }, true);
 })();
 
-/* V112 - Atendimento C&C: busca exata por código 954, sem puxar 662/654/etc */
+/* V114 - Atendimento C&C: fluxo correto de orçamento */
 (function(){
-  if(window.__CEC_VENDAS_IA_V112__) return;
-  window.__CEC_VENDAS_IA_V112__ = true;
+  if(window.__CEC_VENDAS_IA_V114__) return;
+  window.__CEC_VENDAS_IA_V114__ = true;
 
-  const ROOT_ID = 'cecSalesAiV112';
+  const ROOT_ID = 'cecSalesAiV114';
   const WHATSAPP = '556730424796';
+
   let lastMessage = '';
   let lastTime = 0;
+
+  let pendingProducts = [];
+  let pendingCode = '';
+  let pendingQty = 0;
+  let pendingProduct = null;
 
   function clean(v){
     return String(v || '')
@@ -1625,10 +1631,18 @@ function notifyCartAddedV110(){
 
   function qtyFrom(text){
     const q = clean(text);
-    const m = q.match(/\b(\d{1,4})\s*(unidades|unidade|unds|und|un|pecas|peças|pcs|cx|caixas|caixa)\b/);
+
+    let m = q.match(/\b(\d{1,4})\s*(unidades|unidade|unds|und|un|pecas|peças|pcs|cx|caixas|caixa)\b/);
     if(m) return Number(m[1]);
-    const m2 = q.match(/\b(qtd|quantidade)\s*(\d{1,4})\b/);
-    if(m2) return Number(m2[2]);
+
+    m = q.match(/\b(\d{1,4})\s+(do|da|de)\s+[a-z0-9\-]{2,}\b/);
+    if(m) return Number(m[1]);
+
+    m = q.match(/\b(qtd|quantidade)\s*(\d{1,4})\b/);
+    if(m) return Number(m[2]);
+
+    if(/^\d{1,4}$/.test(q) && (pendingProduct || pendingProducts.length)) return Number(q);
+
     return 0;
   }
 
@@ -1661,6 +1675,28 @@ function notifyCartAddedV110(){
     return clean([p.name, p.sku, p.category, p.brand].filter(Boolean).join(' '));
   }
 
+  function productColor(p){
+    const t = field(p);
+    if(/\b(preto|black|bk)\b/.test(t)) return 'preto';
+    if(/\b(ciano|cyan|azul)\b/.test(t)) return 'ciano';
+    if(/\b(magenta|vermelho)\b/.test(t)) return 'magenta';
+    if(/\b(amarelo|yellow)\b/.test(t)) return 'amarelo';
+    if(/\b(colorido|color|tricolor)\b/.test(t)) return 'colorido';
+    if(/\b(kit|combo|jogo|conjunto)\b/.test(t)) return 'kit';
+    return '';
+  }
+
+  function requestedVariant(text){
+    const q = clean(text);
+    if(/\b(preto|black|bk)\b/.test(q)) return 'preto';
+    if(/\b(ciano|cyan|azul)\b/.test(q)) return 'ciano';
+    if(/\b(magenta|vermelho)\b/.test(q)) return 'magenta';
+    if(/\b(amarelo|yellow)\b/.test(q)) return 'amarelo';
+    if(/\b(colorido|color|tricolor)\b/.test(q)) return 'colorido';
+    if(/\b(kit|combo|jogo|conjunto)\b/.test(q)) return 'kit';
+    return '';
+  }
+
   function kindFromText(text){
     const q = clean(text);
     if(/cartucho|cartuchos|tinta|hp\s*954|hp954|\b954\b|\b664\b|\b662\b|\b122\b/.test(q)) return 'cartucho';
@@ -1681,15 +1717,13 @@ function notifyCartAddedV110(){
     const c = clean(code);
     const target = nameSku(p);
 
-    // Código numérico curto como 954: só aceita se estiver no NOME/SKU/CATEGORIA.
-    // Não usa compatibilidade, porque compatibilidade contém muitos números de impressoras e puxa produto errado.
     if(/^\d{3,5}[a-z]*$/.test(c)){
       const rx = new RegExp('(^|[^a-z0-9])' + c + '([a-z]{0,3})([^a-z0-9]|$)', 'i');
       return rx.test(target);
     }
 
-    const flexible = c.replace(/[- ]/g, '[- ]?').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const rx = new RegExp('(^|[^a-z0-9])' + flexible + '([^a-z0-9]|$)', 'i');
+    const safe = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\-/g, '[- ]?');
+    const rx = new RegExp('(^|[^a-z0-9])' + safe + '([^a-z0-9]|$)', 'i');
     return rx.test(target) || target.includes(c);
   }
 
@@ -1698,9 +1732,8 @@ function notifyCartAddedV110(){
     if(!codes.length) return [];
 
     const desiredKind = kindFromText(text);
-    const products = getProducts();
 
-    return products.map(p => {
+    return getProducts().map(p => {
       let score = 0;
       codes.forEach(code => {
         if(codeExactInProduct(p, code)) score += 100;
@@ -1760,8 +1793,14 @@ function notifyCartAddedV110(){
     return searchGeneral(text);
   }
 
+  function filterByVariant(list, text){
+    const variant = requestedVariant(text);
+    if(!variant) return list;
+    return list.filter(p => productColor(p) === variant);
+  }
+
   function addText(text, who){
-    const body = document.getElementById('cecSalesAiBody112');
+    const body = document.getElementById('cecSalesAiBody114');
     if(!body || !text) return;
     const div = document.createElement('div');
     div.className = 'cec-sales-msg ' + who;
@@ -1770,42 +1809,77 @@ function notifyCartAddedV110(){
     body.scrollTop = body.scrollHeight;
   }
 
-  function addProducts(list, originalText){
-    const body = document.getElementById('cecSalesAiBody112');
+  function showChoices(list, originalText){
+    const body = document.getElementById('cecSalesAiBody114');
     if(!body || !list.length) return;
 
     const qty = qtyFrom(originalText);
     const codes = extractCodes(originalText);
-    const qtyValue = qty || 1;
-
-    const head = qty
-      ? `Para orçamento de ${qty} unidade${qty > 1 ? 's' : ''}${codes.length ? ' do código ' + codes.join(', ').toUpperCase() : ''}, encontrei:`
-      : `Encontrei ${list.length === 1 ? 'este produto' : 'estas opções'} no catálogo:`;
-
-    const question = list.length > 1
-      ? 'Como existe mais de uma cor/modelo, escolha o item correto antes de adicionar ao carrinho.'
-      : 'Confirme se este é o item correto antes de adicionar ao carrinho.';
+    const intro = qty
+      ? `Para montar o orçamento de ${qty} unidade${qty > 1 ? 's' : ''}${codes.length ? ' do código ' + codes.join(', ').toUpperCase() : ''}, preciso saber qual opção você quer:`
+      : `Encontrei opções para ${codes.length ? 'o código ' + codes.join(', ').toUpperCase() : 'sua busca'}. Qual delas você deseja?`;
 
     const wrap = document.createElement('div');
     wrap.className = 'cec-sales-results';
     wrap.innerHTML = `
-      <div class="cec-sales-msg bot">${esc(head)}</div>
-      ${list.map(p => {
-        const total = Number(p.price || 0) * qtyValue;
-        const stock = Number(p.stock || 0);
-        return `
-        <article class="cec-sales-product">
-          <strong>${esc(p.name)}</strong>
-          <small>${esc([p.category, p.sku ? 'Cód.: '+p.sku : '', p.brand].filter(Boolean).join(' • '))}</small>
-          <div>
-            <b>${money(p.price)}</b>
-            <span>${stock > 0 ? 'Estoque: '+esc(p.stock) : 'Estoque sob consulta'}</span>
-          </div>
-          ${qty ? `<div><b>Total ${qty} un.: ${money(total)}</b><span>Orçamento estimado</span></div>` : ''}
-          <button type="button" data-cec-ai-add="${esc(p.id)}" data-cec-ai-qty="${esc(qtyValue)}">Adicionar ${qtyValue} ao carrinho</button>
-        </article>`;
-      }).join('')}
-      <div class="cec-sales-msg bot">${esc(question)}</div>
+      <div class="cec-sales-msg bot">${esc(intro)}</div>
+      ${list.map((p, i) => `
+        <article class="cec-sales-choice">
+          <strong>${i + 1}. ${esc(p.name)}</strong>
+          <small>${esc([productColor(p), p.sku ? 'Cód.: '+p.sku : '', money(p.price)].filter(Boolean).join(' • '))}</small>
+        </article>
+      `).join('')}
+      <div class="cec-sales-msg bot">Responda com a cor/modelo. Exemplo: “954 preto”, “954 ciano”, “954 amarelo”, “954 magenta” ou “kit 954”.</div>
+    `;
+    body.appendChild(wrap);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function showProductNeedQty(product){
+    pendingProduct = product;
+    const body = document.getElementById('cecSalesAiBody114');
+    if(!body) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'cec-sales-results';
+    wrap.innerHTML = `
+      <div class="cec-sales-msg bot">Encontrei este produto:</div>
+      <article class="cec-sales-product">
+        <strong>${esc(product.name)}</strong>
+        <small>${esc([product.category, product.sku ? 'Cód.: '+product.sku : '', product.brand].filter(Boolean).join(' • '))}</small>
+        <div>
+          <b>${money(product.price)}</b>
+          <span>${Number(product.stock || 0) > 0 ? 'Estoque: '+esc(product.stock) : 'Estoque sob consulta'}</span>
+        </div>
+      </article>
+      <div class="cec-sales-msg bot">Qual quantidade você deseja para montar o orçamento?</div>
+    `;
+
+    body.appendChild(wrap);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function showQuote(product, qty){
+    const body = document.getElementById('cecSalesAiBody114');
+    if(!body || !product || !qty) return;
+
+    const total = Number(product.price || 0) * qty;
+    const stock = Number(product.stock || 0);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'cec-sales-results';
+    wrap.innerHTML = `
+      <div class="cec-sales-msg bot">Orçamento estimado:</div>
+      <article class="cec-sales-product">
+        <strong>${esc(product.name)}</strong>
+        <small>${esc([product.category, product.sku ? 'Cód.: '+product.sku : '', product.brand].filter(Boolean).join(' • '))}</small>
+        <div><b>Quantidade:</b><span>${qty} unidade${qty > 1 ? 's' : ''}</span></div>
+        <div><b>Valor unitário:</b><span>${money(product.price)}</span></div>
+        <div><b>Total:</b><span>${money(total)}</span></div>
+        <div><b>Estoque:</b><span>${stock > 0 ? esc(stock) : 'sob consulta'}</span></div>
+        <button type="button" data-cec-ai-add="${esc(product.id)}" data-cec-ai-qty="${esc(qty)}">Adicionar ${qty} ao carrinho</button>
+      </article>
+      <div class="cec-sales-msg bot">Você pode adicionar ao carrinho ou chamar a C&C no WhatsApp para confirmar disponibilidade.</div>
     `;
 
     body.appendChild(wrap);
@@ -1813,32 +1887,22 @@ function notifyCartAddedV110(){
   }
 
   function fallback(text){
+    const q = clean(text);
     const codes = extractCodes(text);
-    const qty = qtyFrom(text);
+
+    if(/orcamento|cotacao|preco|valor|pedido|pedi|comprar|quero|preciso/.test(q) && !codes.length){
+      return 'Claro. Para montar o orçamento, me informe: modelo/código do produto e quantidade. Exemplo: “10 unidades do 954 preto” ou “2 toners D204L”.';
+    }
 
     if(codes.length){
-      return `Não encontrei item exato para ${codes.join(', ').toUpperCase()} no catálogo carregado agora.${qty ? ' Quantidade solicitada: ' + qty + ' unidade' + (qty > 1 ? 's.' : '.') : ''} Me envie a cor/modelo completo ou chame no WhatsApp para confirmar.`;
+      return `Não encontrei item exato para ${codes.join(', ').toUpperCase()} no catálogo carregado agora. Me envie a cor/modelo completo ou chame no WhatsApp para confirmar.`;
     }
 
-    const q = clean(text);
-    if(/orcamento|cotacao|preco|valor|pedido|pedi|comprar|quero|preciso/.test(q)){
-      return 'Para orçamento correto, envie código/modelo e quantidade. Exemplo: “10 unidades do 954 preto”, “10 do 954 ciano” ou “2 toners D204L”.';
-    }
-    if(/entrega|frete|prazo|envio|receber/.test(q)){
-      return 'Para entrega/frete, informe cidade, bairro ou CEP.';
-    }
-    if(/pix|pagamento|pagar|boleto|cartao|dinheiro/.test(q)){
-      return 'O pagamento principal pelo site é via PIX.';
-    }
-    if(/acompanhar|rastrear|status|codigo|meu pedido/.test(q)){
-      return 'Acesse “Acompanhar pedido” no menu e informe o código recebido.';
-    }
-    if(/troca|devolucao|garantia|defeito|problema/.test(q)){
-      return 'Para troca, devolução ou garantia, envie número do pedido, produto, motivo e telefone.';
-    }
-    if(/humano|atendente|whats|whatsapp|zap|telefone|contato/.test(q)){
-      return 'Clique em “Chamar no WhatsApp” para falar com a C&C pelo (67) 3042-4796.';
-    }
+    if(/entrega|frete|prazo|envio|receber/.test(q)) return 'Para entrega/frete, informe cidade, bairro ou CEP.';
+    if(/pix|pagamento|pagar|boleto|cartao|dinheiro/.test(q)) return 'O pagamento principal pelo site é via PIX.';
+    if(/acompanhar|rastrear|status|codigo|meu pedido/.test(q)) return 'Acesse “Acompanhar pedido” no menu e informe o código recebido.';
+    if(/troca|devolucao|garantia|defeito|problema/.test(q)) return 'Para troca, devolução ou garantia, envie número do pedido, produto, motivo e telefone.';
+    if(/humano|atendente|whats|whatsapp|zap|telefone|contato/.test(q)) return 'Clique em “Chamar no WhatsApp” para falar com a C&C pelo (67) 3042-4796.';
 
     return 'Digite código/modelo e quantidade. Exemplo: “10 unidades do 954 preto”, “954 ciano” ou “D204L”.';
   }
@@ -1855,14 +1919,63 @@ function notifyCartAddedV110(){
     addText(msg, 'user');
 
     setTimeout(() => {
-      const found = searchCatalog(msg);
-      if(found.length) addProducts(found, msg);
-      else addText(fallback(msg), 'bot');
+      const qty = qtyFrom(msg);
+      const codes = extractCodes(msg);
+      const variant = requestedVariant(msg);
+
+      // Se o usuário respondeu só a cor/modelo depois de uma pergunta anterior.
+      if(pendingProducts.length && variant && !codes.length){
+        let selected = filterByVariant(pendingProducts, msg);
+        if(selected.length === 1){
+          if(pendingQty) showQuote(selected[0], pendingQty);
+          else showProductNeedQty(selected[0]);
+          pendingProducts = [];
+          pendingCode = '';
+          pendingQty = 0;
+          return;
+        }
+      }
+
+      // Se o usuário informou só a quantidade depois de já escolher um produto.
+      if(pendingProduct && qty && !codes.length && !variant){
+        showQuote(pendingProduct, qty);
+        pendingProduct = null;
+        return;
+      }
+
+      let found = searchCatalog(msg);
+      if(found.length && variant){
+        const filtered = filterByVariant(found, msg);
+        if(filtered.length) found = filtered;
+      }
+
+      // Código genérico com várias opções e sem cor/modelo: pergunta antes, não mostra carrinho.
+      if(found.length > 1 && codes.length && !variant){
+        pendingProducts = found;
+        pendingCode = codes[0] || '';
+        pendingQty = qty || 0;
+        pendingProduct = null;
+        showChoices(found, msg);
+        return;
+      }
+
+      if(found.length === 1){
+        if(qty) showQuote(found[0], qty);
+        else showProductNeedQty(found[0]);
+        return;
+      }
+
+      if(found.length > 1){
+        showChoices(found, msg);
+        return;
+      }
+
+      addText(fallback(msg), 'bot');
     }, 150);
   }
 
   function openWhatsapp(){
-    const body = document.getElementById('cecSalesAiBody112');
+    const body = document.getElementById('cecSalesAiBody114');
     const history = body ? Array.from(body.querySelectorAll('.cec-sales-msg')).slice(-10).map(el => {
       return (el.classList.contains('user') ? 'Cliente: ' : 'C&C: ') + el.textContent;
     }).join('\n') : '';
@@ -1871,7 +1984,7 @@ function notifyCartAddedV110(){
   }
 
   function removeOldBots(){
-    ['cecChatWidget','cecSmartBotV106','cecBotV106','cecAssistV107','cecAssistantV108','cecSalesAiV109','cecSalesAiV111','cecSalesAiV112'].forEach(id => {
+    ['cecChatWidget','cecSmartBotV106','cecBotV106','cecAssistV107','cecAssistantV108','cecSalesAiV109','cecSalesAiV111','cecSalesAiV112','cecSalesAiV113','cecSalesAiV114'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.remove();
     });
@@ -1886,56 +1999,56 @@ function notifyCartAddedV110(){
     root.id = ROOT_ID;
     root.className = 'cec-sales-ai';
     root.innerHTML = `
-      <button class="cec-sales-open" id="cecSalesAiOpen112" type="button" aria-label="Fale com a C&C">
+      <button class="cec-sales-open" id="cecSalesAiOpen114" type="button" aria-label="Fale com a C&C">
         <span>💬</span>
         <strong>Fale com a C&C</strong>
       </button>
 
-      <section class="cec-sales-panel hidden" id="cecSalesAiPanel112">
+      <section class="cec-sales-panel hidden" id="cecSalesAiPanel114">
         <header>
           <div>
             <strong>Fale com a C&C</strong>
-            <small>Atendimento de vendas • v112</small>
+            <small>Atendimento de vendas • v114</small>
           </div>
-          <button type="button" id="cecSalesAiClose112" aria-label="Fechar">×</button>
+          <button type="button" id="cecSalesAiClose114" aria-label="Fechar">×</button>
         </header>
 
-        <main id="cecSalesAiBody112" class="cec-sales-body"></main>
+        <main id="cecSalesAiBody114" class="cec-sales-body"></main>
 
-        <form id="cecSalesAiForm112" class="cec-sales-form">
-          <input id="cecSalesAiInput112" placeholder="Ex.: 10 unidades do 954 preto..." autocomplete="off">
+        <form id="cecSalesAiForm114" class="cec-sales-form">
+          <input id="cecSalesAiInput114" placeholder="Ex.: 10 unidades do 954 preto..." autocomplete="off">
           <button type="submit">Enviar</button>
         </form>
 
-        <button class="cec-sales-wpp" id="cecSalesAiWpp112" type="button">Chamar no WhatsApp</button>
+        <button class="cec-sales-wpp" id="cecSalesAiWpp114" type="button">Chamar no WhatsApp</button>
       </section>
     `;
 
     document.body.appendChild(root);
 
-    const open = document.getElementById('cecSalesAiOpen112');
-    const panel = document.getElementById('cecSalesAiPanel112');
+    const open = document.getElementById('cecSalesAiOpen114');
+    const panel = document.getElementById('cecSalesAiPanel114');
 
     open.addEventListener('click', () => {
       panel.classList.remove('hidden');
       open.classList.add('hidden');
-      const body = document.getElementById('cecSalesAiBody112');
+      const body = document.getElementById('cecSalesAiBody114');
       if(!body.dataset.started){
         body.dataset.started = '1';
-        addText('Olá! Digite código/modelo e quantidade. Exemplo: “10 unidades do 954 preto” ou “954 ciano”.', 'bot');
+        addText('Olá! Para orçamento, digite código/modelo e quantidade. Exemplo: “10 unidades do 954 preto”.', 'bot');
       }
-      setTimeout(() => document.getElementById('cecSalesAiInput112')?.focus(), 80);
+      setTimeout(() => document.getElementById('cecSalesAiInput114')?.focus(), 80);
     });
 
-    document.getElementById('cecSalesAiClose112').addEventListener('click', () => {
+    document.getElementById('cecSalesAiClose114').addEventListener('click', () => {
       panel.classList.add('hidden');
       open.classList.remove('hidden');
     });
 
-    document.getElementById('cecSalesAiForm112').addEventListener('submit', e => {
+    document.getElementById('cecSalesAiForm114').addEventListener('submit', e => {
       e.preventDefault();
       e.stopPropagation();
-      const input = document.getElementById('cecSalesAiInput112');
+      const input = document.getElementById('cecSalesAiInput114');
       send(input.value);
       input.value = '';
     });
@@ -1959,7 +2072,7 @@ function notifyCartAddedV110(){
       }
     });
 
-    document.getElementById('cecSalesAiWpp112').addEventListener('click', openWhatsapp);
+    document.getElementById('cecSalesAiWpp114').addEventListener('click', openWhatsapp);
   }
 
   if(document.readyState === 'loading'){
