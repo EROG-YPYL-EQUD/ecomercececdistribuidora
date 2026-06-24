@@ -3882,3 +3882,53 @@ td{
     height:240px;
   }
 }
+
+
+/* V104 - Mensagem de abertura do botão Fale com a C&C */
+.cec-chat-opening{
+  margin:0 0 10px auto;
+  width:max-content;
+  max-width:260px;
+  background:#fff;
+  color:var(--text);
+  border:1px solid var(--line);
+  border-radius:18px 18px 6px 18px;
+  padding:10px 13px;
+  box-shadow:0 14px 32px rgba(0,0,0,.18);
+  animation:cecOpeningPulse 2.8s ease-in-out infinite;
+}
+.cec-chat-opening strong{
+  display:block;
+  color:var(--brand);
+  font-size:14px;
+  line-height:1.15;
+}
+.cec-chat-opening span{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:800;
+  margin-top:3px;
+}
+@keyframes cecOpeningPulse{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-3px)}
+}
+@media(max-width:520px){
+  .cec-chat-opening{
+    max-width:230px;
+    font-size:13px;
+  }
+}
+
+
+/* V105 - Correção de clique/resposta do atendimento */
+.cec-chat-form input,
+.cec-chat-form button,
+.cec-chat-quick button,
+.cec-chat-whatsapp{
+  pointer-events:auto;
+}
+.cec-chat-form button{
+  min-width:76px;
+}

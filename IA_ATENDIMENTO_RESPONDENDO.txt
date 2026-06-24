@@ -1,0 +1,14 @@
+VERSÃO 105 - IA DE ATENDIMENTO RESPONDENDO
+
+Correção feita:
+- O atendimento "Fale com a C&C" agora responde corretamente.
+- Removi dependência de função externa que podia travar a resposta.
+- Botão Enviar corrigido.
+- Botões rápidos corrigidos.
+- Se acontecer falha, mostra mensagem para chamar no WhatsApp.
+
+Mantido:
+- Botão aparece nas páginas públicas.
+- Não aparece no Admin.
+- WhatsApp (67) 3042-4796.
+- Domínio www.cecdistribuidora.com.br.

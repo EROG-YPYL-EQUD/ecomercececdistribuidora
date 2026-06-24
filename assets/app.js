@@ -1628,6 +1628,11 @@ function initCecChatWidget(){
   widget.id = 'cecChatWidget';
   widget.className = 'cec-chat-widget';
   widget.innerHTML = `
+    <div class="cec-chat-opening" id="cecChatOpening">
+      <strong>Olá! Precisa de ajuda?</strong>
+      <span>Fale com a C&C</span>
+    </div>
+
     <button class="cec-chat-float" id="cecChatOpen" type="button" aria-label="Fale com a C&C">
       <span>💬</span>
       <strong>Fale com a C&C</strong>
@@ -1670,9 +1675,10 @@ function initCecChatWidget(){
   openBtn?.addEventListener('click', () => {
     panel?.classList.remove('hidden');
     openBtn?.classList.add('hidden');
+    $('#cecChatOpening')?.classList.add('hidden');
     if(!$('#cecChatBody')?.dataset.started){
       $('#cecChatBody').dataset.started = '1';
-      cecAddBotMessage('Olá! Sou o atendimento virtual da C&C Distribuidora. Como posso ajudar?');
+      cecAddBotMessage('Olá! Sou o atendimento virtual da C&C Distribuidora. Posso ajudar com produtos, pedidos, entregas, pagamentos, trocas, devoluções ou encaminhar para um atendente.');
     }
     setTimeout(() => $('#cecChatInput')?.focus(), 80);
   });
@@ -1680,6 +1686,7 @@ function initCecChatWidget(){
   $('#cecChatClose')?.addEventListener('click', () => {
     panel?.classList.add('hidden');
     openBtn?.classList.remove('hidden');
+    $('#cecChatOpening')?.classList.remove('hidden');
   });
 
   $('#cecChatForm')?.addEventListener('submit', e => {
@@ -1700,3 +1707,94 @@ function initCecChatWidget(){
 }
 
 document.addEventListener('DOMContentLoaded', initCecChatWidget);
+
+
+/* V105 - Correção: IA Fale com a C&C respondendo */
+function cecNormalizeBotTextV105(text){
+  return String(text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function cecBotAnswer(text){
+  const msg = cecNormalizeBotTextV105(text);
+
+  if(!msg.trim()){
+    return 'Olá! Sou o atendimento virtual da C&C Distribuidora. Posso ajudar com produtos, pedidos, entregas, pagamentos, trocas, devoluções ou encaminhar para um atendente.';
+  }
+
+  if(/humano|atendente|pessoa|whats|zap|telefone|contato|falar|vendedor|vendedora/.test(msg)){
+    return 'Claro. Para falar com um atendente da C&C, clique em Chamar no WhatsApp ou envie mensagem para (67) 3042-4796.';
+  }
+
+  if(/compr|orcament|cotac|preco|valor|pedido|quero|preciso|tem|comprar|cotacao/.test(msg)){
+    return 'Para comprar ou pedir orçamento, envie: nome, telefone, modelo da impressora, produto desejado e quantidade. Também posso encaminhar para o WhatsApp da C&C.';
+  }
+
+  if(/toner|cartucho|fotocondutor|cilindro|impressora|suprimento|produto|hp|brother|canon|samsung|epson|lexmark|xerox/.test(msg)){
+    return 'Trabalhamos com toners, cartuchos, fotocondutores e suprimentos para impressão. Para localizar o item correto, informe o modelo da impressora e a quantidade desejada.';
+  }
+
+  if(/entrega|frete|prazo|enviar|envio|receber|transportadora/.test(msg)){
+    return 'Sobre entregas: para confirmar prazo e frete, informe seu endereço ou fale com nosso atendimento. A C&C verifica disponibilidade conforme região.';
+  }
+
+  if(/pix|pagamento|pagar|boleto|cartao|cartao|dinheiro/.test(msg)){
+    return 'O pagamento principal no site é via PIX. Após finalizar o pedido, siga as instruções de pagamento e acompanhe o status pelo código do pedido.';
+  }
+
+  if(/acompanhar|rastrear|status|codigo|pedido|meu pedido/.test(msg)){
+    return 'Para acompanhar seu pedido, acesse o menu Acompanhar pedido e informe o código recebido na finalização da compra.';
+  }
+
+  if(/troca|devolu|garantia|defeito|erro|problema/.test(msg)){
+    return 'Para trocas, devoluções ou garantia, informe número do pedido, produto, motivo e contato. Nossa equipe orientará o procedimento.';
+  }
+
+  if(/horario|abre|fecha|funciona|atendimento|expediente/.test(msg)){
+    return 'Nosso atendimento funciona de segunda a sexta, das 8h às 17h. Sábado e domingo fechado.';
+  }
+
+  if(/email|e-mail|mail/.test(msg)){
+    return 'Você pode falar com a C&C pelos e-mails vendas@cecvendas.com e garantia@cecvendas.com.';
+  }
+
+  return 'Posso ajudar com produtos, compras, pedidos, entregas, pagamentos, trocas, devoluções e atendimento da C&C. Para comprar, envie nome, telefone, modelo da impressora, produto e quantidade.';
+}
+
+function cecSendBotMessage(text){
+  const clean = String(text || '').trim();
+  if(!clean) return;
+
+  cecAddBotMessage(clean, 'user');
+
+  setTimeout(() => {
+    try{
+      cecAddBotMessage(cecBotAnswer(clean), 'bot');
+    }catch(err){
+      console.error('Erro no atendimento C&C:', err);
+      cecAddBotMessage('Tive uma falha ao responder. Clique em Chamar no WhatsApp para falar com a C&C.', 'bot');
+    }
+  }, 180);
+}
+
+// Garante funcionamento mesmo se algum navegador não registrar o listener antigo.
+document.addEventListener('submit', function(e){
+  const form = e.target && e.target.closest ? e.target.closest('#cecChatForm') : null;
+  if(!form) return;
+
+  e.preventDefault();
+  const input = document.getElementById('cecChatInput');
+  const text = input ? input.value : '';
+  if(input) input.value = '';
+  cecSendBotMessage(text);
+}, true);
+
+document.addEventListener('click', function(e){
+  const btn = e.target && e.target.closest ? e.target.closest('[data-cec-quick]') : null;
+  if(!btn) return;
+
+  e.preventDefault();
+  cecSendBotMessage(btn.dataset.cecQuick || btn.textContent || '');
+}, true);

@@ -1,0 +1,14 @@
+VERSÃO 104 - MENSAGEM DE ABERTURA DO FALE COM A C&C
+
+Adicionado:
+- Balão antes de abrir o atendimento:
+  "Olá! Precisa de ajuda? Fale com a C&C"
+
+Quando o cliente clica no botão, o chat abre com a mensagem:
+"Olá! Sou o atendimento virtual da C&C Distribuidora. Posso ajudar com produtos, pedidos, entregas, pagamentos, trocas, devoluções ou encaminhar para um atendente."
+
+Mantido:
+- Botão Fale com a C&C em todas as páginas públicas.
+- Não aparece no Admin.
+- WhatsApp (67) 3042-4796.
+- Domínio www.cecdistribuidora.com.br.
