@@ -3761,7 +3761,7 @@ td{
   }
 }
 
-/* V114 - Atendimento de vendas C&C fluxo correto de orçamento */
+/* V115 - Atendimento de vendas C&C com busca por prefixo */
 .cec-sales-ai{
   position:fixed;
   right:18px;
@@ -3863,4 +3863,20 @@ td{
   .cec-sales-ai{right:12px;bottom:12px}
   .cec-sales-panel{width:calc(100vw - 24px)}
   .cec-sales-body{height:295px}
+}
+
+
+/* V116 - Texto digitado no chat em preto */
+.cec-sales-form input,
+#cecSalesAiInput115,
+#cecSalesAiInput116{
+  color:#111 !important;
+  background:#fff !important;
+  caret-color:#111 !important;
+}
+.cec-sales-form input::placeholder,
+#cecSalesAiInput115::placeholder,
+#cecSalesAiInput116::placeholder{
+  color:#777 !important;
+  opacity:1 !important;
 }

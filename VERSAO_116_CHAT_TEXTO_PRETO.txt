@@ -1,0 +1,11 @@
+VERSÃO 116 - TEXTO DO CHAT EM PRETO
+
+Corrigido:
+- Texto digitado no campo da IA agora fica preto.
+- Cursor fica preto.
+- Fundo do campo fica branco.
+- Placeholder fica cinza.
+- Cabeçalho mostra v116.
+
+Base:
+- versão 115.

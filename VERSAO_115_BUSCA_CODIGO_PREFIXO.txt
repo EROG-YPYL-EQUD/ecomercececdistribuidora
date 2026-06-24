@@ -1,0 +1,9 @@
+VERSÃO 115 - BUSCA POR CÓDIGO COM PREFIXO
+
+Corrigido:
+- Se o cliente digitar 1060, a IA procura produtos com 1060 no nome/SKU, incluindo TN1060 e DR1060.
+- Se digitar TN1060, TN-1060 ou TN 1060, prioriza toner TN1060.
+- Se digitar DR1060, DR-1060 ou DR 1060, prioriza fotocondutor/cilindro DR1060.
+- Código numérico continua sem usar compatibilidade, para não puxar produto errado.
+- Mantém fluxo de orçamento da versão 114.
+- Cabeçalho mostra v115.

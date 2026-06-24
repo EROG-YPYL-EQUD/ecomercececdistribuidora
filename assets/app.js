@@ -1587,12 +1587,12 @@ function notifyCartAddedV110(){
   }, true);
 })();
 
-/* V114 - Atendimento C&C: fluxo correto de orçamento */
+/* V115 - Atendimento C&C: busca por código com prefixo TN/DR/CF/CE/MLT */
 (function(){
-  if(window.__CEC_VENDAS_IA_V114__) return;
-  window.__CEC_VENDAS_IA_V114__ = true;
+  if(window.__CEC_VENDAS_IA_V115__) return;
+  window.__CEC_VENDAS_IA_V115__ = true;
 
-  const ROOT_ID = 'cecSalesAiV114';
+  const ROOT_ID = 'cecSalesAiV115';
   const WHATSAPP = '556730424796';
 
   let lastMessage = '';
@@ -1655,16 +1655,30 @@ function notifyCartAddedV110(){
       'do','da','de','para','pra','pro','com','sem','modelo','impressora','produto','toner','cartucho'
     ]);
 
-    return q.split(/\s+/).filter(w => {
-      if(stop.has(w)) return false;
-      if(qty && String(qty) === w) return false;
+    const parts = q.split(/\s+/);
+    const codes = [];
 
-      return (
+    parts.forEach((w, i) => {
+      if(stop.has(w)) return;
+      if(qty && String(qty) === w) return;
+
+      // Prefixo separado: "tn 1060", "dr 1060", "cf 283"
+      if(/^(tn|dr|cf|ce|q|mlt|d)$/.test(w) && parts[i+1] && /^\d{2,5}[a-z0-9]*$/.test(parts[i+1])){
+        const combined = w + parts[i+1];
+        if(!codes.includes(combined)) codes.push(combined);
+        return;
+      }
+
+      const isCode = (
         /^\d{3,5}[a-z]{0,3}$/.test(w) ||
         /^[a-z]{1,8}[-]?\d{2,5}[a-z0-9]{0,5}$/.test(w) ||
         /^(tn|dr|cf|ce|q|mlt|d)\d+[a-z0-9]*$/.test(w)
       );
+
+      if(isCode && !codes.includes(w)) codes.push(w);
     });
+
+    return codes;
   }
 
   function field(p){
@@ -1700,31 +1714,63 @@ function notifyCartAddedV110(){
   function kindFromText(text){
     const q = clean(text);
     if(/cartucho|cartuchos|tinta|hp\s*954|hp954|\b954\b|\b664\b|\b662\b|\b122\b/.test(q)) return 'cartucho';
-    if(/fotocondutor|cilindro|drum|unidade de imagem/.test(q)) return 'fotocondutor';
-    if(/toner|toners|tn|mlt|d204|cf|ce|q2612/.test(q)) return 'toner';
+    if(/fotocondutor|cilindro|drum|unidade de imagem|\bdr[- ]?\d+/.test(q)) return 'fotocondutor';
+    if(/toner|toners|\btn[- ]?\d+|mlt|d204|cf|ce|q2612/.test(q)) return 'toner';
     return '';
   }
 
   function kindProduct(p){
     const t = field(p);
     if(/cartucho|tinta|ink|hp\s*954|hp954|\b954\b|\b664\b|\b662\b|\b122\b/.test(t)) return 'cartucho';
-    if(/fotocondutor|cilindro|drum|unidade de imagem/.test(t)) return 'fotocondutor';
-    if(/toner|toners|tn|mlt|d204|cf|ce|q2612/.test(t)) return 'toner';
+    if(/fotocondutor|cilindro|drum|unidade de imagem|\bdr[- ]?\d+/.test(t)) return 'fotocondutor';
+    if(/toner|toners|\btn[- ]?\d+|mlt|d204|cf|ce|q2612/.test(t)) return 'toner';
     return '';
   }
 
-  function codeExactInProduct(p, code){
-    const c = clean(code);
-    const target = nameSku(p);
+  function isPrefixCode(code){
+    return /^(tn|dr|cf|ce|q|mlt|d)[-]?\d+/i.test(String(code || ''));
+  }
 
-    if(/^\d{3,5}[a-z]*$/.test(c)){
-      const rx = new RegExp('(^|[^a-z0-9])' + c + '([a-z]{0,3})([^a-z0-9]|$)', 'i');
+  function codeNumber(code){
+    const m = clean(code).match(/\d{2,5}/);
+    return m ? m[0] : '';
+  }
+
+  function codeExactInProduct(p, code){
+    const c = clean(code).replace(/\s+/g, '');
+    const target = nameSku(p).replace(/\s+/g, ' ');
+    const compactTarget = target.replace(/[-\s]/g, '');
+
+    // Código com prefixo: TN1060, TN-1060, DR1060, DR-1060.
+    // Aqui precisa bater o prefixo certo.
+    if(isPrefixCode(c)){
+      const compactCode = c.replace(/[-\s]/g, '');
+      if(compactTarget.includes(compactCode)) return true;
+
+      const prefix = compactCode.match(/^[a-z]+/)[0];
+      const number = codeNumber(compactCode);
+      if(!number) return false;
+
+      const rx = new RegExp('(^|[^a-z0-9])' + prefix + '[- ]?' + number + '([a-z0-9]*)([^a-z0-9]|$)', 'i');
       return rx.test(target);
+    }
+
+    // Código numérico curto (1060, 954, 204):
+    // bate em nome/SKU/categoria com número sozinho OU com prefixo conhecido antes.
+    // Ex.: 1060 encontra TN1060 e DR1060.
+    // Não usa compatibilidade para não puxar produto errado.
+    if(/^\d{2,5}[a-z]*$/.test(c)){
+      const number = c.match(/\d{2,5}/)[0];
+
+      const standalone = new RegExp('(^|[^a-z0-9])' + number + '([a-z]{0,3})([^a-z0-9]|$)', 'i');
+      const prefixed = new RegExp('(^|[^a-z0-9])(tn|dr|cf|ce|q|mlt|d)[- ]?' + number + '([a-z0-9]*)([^a-z0-9]|$)', 'i');
+
+      return standalone.test(target) || prefixed.test(target);
     }
 
     const safe = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\-/g, '[- ]?');
     const rx = new RegExp('(^|[^a-z0-9])' + safe + '([^a-z0-9]|$)', 'i');
-    return rx.test(target) || target.includes(c);
+    return rx.test(target) || compactTarget.includes(c);
   }
 
   function searchByCodes(text){
@@ -1732,15 +1778,27 @@ function notifyCartAddedV110(){
     if(!codes.length) return [];
 
     const desiredKind = kindFromText(text);
+    const hasPrefixedInput = codes.some(isPrefixCode);
 
     return getProducts().map(p => {
       let score = 0;
+
       codes.forEach(code => {
-        if(codeExactInProduct(p, code)) score += 100;
+        if(codeExactInProduct(p, code)){
+          score += isPrefixCode(code) ? 130 : 100;
+        }
       });
 
       const pk = kindProduct(p);
-      if(desiredKind && pk && desiredKind !== pk) score -= 200;
+
+      // Se o cliente digitou TN1060, prioriza toner; se DR1060, prioriza fotocondutor.
+      const codeText = clean(codes.join(' '));
+      if(/\btn[- ]?\d+/.test(codeText) && pk === 'toner') score += 35;
+      if(/\bdr[- ]?\d+/.test(codeText) && pk === 'fotocondutor') score += 35;
+      if(/\btn[- ]?\d+/.test(codeText) && pk && pk !== 'toner') score -= 120;
+      if(/\bdr[- ]?\d+/.test(codeText) && pk && pk !== 'fotocondutor') score -= 120;
+
+      if(desiredKind && pk && desiredKind !== pk && !hasPrefixedInput) score -= 200;
       if(desiredKind && pk === desiredKind) score += 15;
 
       return {p, score};
@@ -1800,7 +1858,7 @@ function notifyCartAddedV110(){
   }
 
   function addText(text, who){
-    const body = document.getElementById('cecSalesAiBody114');
+    const body = document.getElementById('cecSalesAiBody115');
     if(!body || !text) return;
     const div = document.createElement('div');
     div.className = 'cec-sales-msg ' + who;
@@ -1810,14 +1868,20 @@ function notifyCartAddedV110(){
   }
 
   function showChoices(list, originalText){
-    const body = document.getElementById('cecSalesAiBody114');
+    const body = document.getElementById('cecSalesAiBody115');
     if(!body || !list.length) return;
 
     const qty = qtyFrom(originalText);
     const codes = extractCodes(originalText);
+    const hasPrefix = codes.some(isPrefixCode);
+
     const intro = qty
       ? `Para montar o orçamento de ${qty} unidade${qty > 1 ? 's' : ''}${codes.length ? ' do código ' + codes.join(', ').toUpperCase() : ''}, preciso saber qual opção você quer:`
       : `Encontrei opções para ${codes.length ? 'o código ' + codes.join(', ').toUpperCase() : 'sua busca'}. Qual delas você deseja?`;
+
+    const help = hasPrefix
+      ? 'Responda com a opção desejada ou informe a quantidade. Exemplo: “2 unidades”.'
+      : 'Responda com o modelo/tipo. Exemplo: “TN1060”, “DR1060”, “1060 toner” ou “1060 fotocondutor”.';
 
     const wrap = document.createElement('div');
     wrap.className = 'cec-sales-results';
@@ -1826,10 +1890,10 @@ function notifyCartAddedV110(){
       ${list.map((p, i) => `
         <article class="cec-sales-choice">
           <strong>${i + 1}. ${esc(p.name)}</strong>
-          <small>${esc([productColor(p), p.sku ? 'Cód.: '+p.sku : '', money(p.price)].filter(Boolean).join(' • '))}</small>
+          <small>${esc([kindProduct(p), productColor(p), p.sku ? 'Cód.: '+p.sku : '', money(p.price)].filter(Boolean).join(' • '))}</small>
         </article>
       `).join('')}
-      <div class="cec-sales-msg bot">Responda com a cor/modelo. Exemplo: “954 preto”, “954 ciano”, “954 amarelo”, “954 magenta” ou “kit 954”.</div>
+      <div class="cec-sales-msg bot">${esc(help)}</div>
     `;
     body.appendChild(wrap);
     body.scrollTop = body.scrollHeight;
@@ -1837,7 +1901,7 @@ function notifyCartAddedV110(){
 
   function showProductNeedQty(product){
     pendingProduct = product;
-    const body = document.getElementById('cecSalesAiBody114');
+    const body = document.getElementById('cecSalesAiBody115');
     if(!body) return;
 
     const wrap = document.createElement('div');
@@ -1860,7 +1924,7 @@ function notifyCartAddedV110(){
   }
 
   function showQuote(product, qty){
-    const body = document.getElementById('cecSalesAiBody114');
+    const body = document.getElementById('cecSalesAiBody115');
     if(!body || !product || !qty) return;
 
     const total = Number(product.price || 0) * qty;
@@ -1891,11 +1955,11 @@ function notifyCartAddedV110(){
     const codes = extractCodes(text);
 
     if(/orcamento|cotacao|preco|valor|pedido|pedi|comprar|quero|preciso/.test(q) && !codes.length){
-      return 'Claro. Para montar o orçamento, me informe: modelo/código do produto e quantidade. Exemplo: “10 unidades do 954 preto” ou “2 toners D204L”.';
+      return 'Claro. Para montar o orçamento, me informe: modelo/código do produto e quantidade. Exemplo: “10 unidades do TN1060” ou “2 DR1060”.';
     }
 
     if(codes.length){
-      return `Não encontrei item exato para ${codes.join(', ').toUpperCase()} no catálogo carregado agora. Me envie a cor/modelo completo ou chame no WhatsApp para confirmar.`;
+      return `Não encontrei item exato para ${codes.join(', ').toUpperCase()} no catálogo carregado agora. Tente sem hífen ou informe o tipo, exemplo: TN1060, DR1060 ou 1060 toner.`;
     }
 
     if(/entrega|frete|prazo|envio|receber/.test(q)) return 'Para entrega/frete, informe cidade, bairro ou CEP.';
@@ -1904,7 +1968,7 @@ function notifyCartAddedV110(){
     if(/troca|devolucao|garantia|defeito|problema/.test(q)) return 'Para troca, devolução ou garantia, envie número do pedido, produto, motivo e telefone.';
     if(/humano|atendente|whats|whatsapp|zap|telefone|contato/.test(q)) return 'Clique em “Chamar no WhatsApp” para falar com a C&C pelo (67) 3042-4796.';
 
-    return 'Digite código/modelo e quantidade. Exemplo: “10 unidades do 954 preto”, “954 ciano” ou “D204L”.';
+    return 'Digite código/modelo e quantidade. Exemplo: “1060”, “TN1060”, “DR1060” ou “2 toners TN1060”.';
   }
 
   function send(text){
@@ -1922,10 +1986,16 @@ function notifyCartAddedV110(){
       const qty = qtyFrom(msg);
       const codes = extractCodes(msg);
       const variant = requestedVariant(msg);
+      const hasPrefixedInput = codes.some(isPrefixCode);
 
-      // Se o usuário respondeu só a cor/modelo depois de uma pergunta anterior.
-      if(pendingProducts.length && variant && !codes.length){
-        let selected = filterByVariant(pendingProducts, msg);
+      // Se respondeu tipo/modelo depois de pergunta anterior
+      if(pendingProducts.length && codes.length){
+        let selected = searchCatalog(msg);
+        if(!selected.length){
+          const q = clean(msg);
+          if(/\btoner\b|\btn[- ]?\d+/.test(q)) selected = pendingProducts.filter(p => kindProduct(p) === 'toner');
+          if(/\bfotocondutor\b|\bcilindro\b|\bdr[- ]?\d+/.test(q)) selected = pendingProducts.filter(p => kindProduct(p) === 'fotocondutor');
+        }
         if(selected.length === 1){
           if(pendingQty) showQuote(selected[0], pendingQty);
           else showProductNeedQty(selected[0]);
@@ -1936,7 +2006,7 @@ function notifyCartAddedV110(){
         }
       }
 
-      // Se o usuário informou só a quantidade depois de já escolher um produto.
+      // Se respondeu só quantidade depois de um produto único
       if(pendingProduct && qty && !codes.length && !variant){
         showQuote(pendingProduct, qty);
         pendingProduct = null;
@@ -1949,8 +2019,19 @@ function notifyCartAddedV110(){
         if(filtered.length) found = filtered;
       }
 
-      // Código genérico com várias opções e sem cor/modelo: pergunta antes, não mostra carrinho.
-      if(found.length > 1 && codes.length && !variant){
+      // Código numérico genérico com várias opções, como 1060:
+      // pergunta se é TN1060, DR1060 etc.
+      if(found.length > 1 && codes.length && !variant && !hasPrefixedInput){
+        pendingProducts = found;
+        pendingCode = codes[0] || '';
+        pendingQty = qty || 0;
+        pendingProduct = null;
+        showChoices(found, msg);
+        return;
+      }
+
+      // Código com prefixo e encontrou mais de um produto: mostra opções já filtradas.
+      if(found.length > 1 && codes.length && hasPrefixedInput){
         pendingProducts = found;
         pendingCode = codes[0] || '';
         pendingQty = qty || 0;
@@ -1975,7 +2056,7 @@ function notifyCartAddedV110(){
   }
 
   function openWhatsapp(){
-    const body = document.getElementById('cecSalesAiBody114');
+    const body = document.getElementById('cecSalesAiBody115');
     const history = body ? Array.from(body.querySelectorAll('.cec-sales-msg')).slice(-10).map(el => {
       return (el.classList.contains('user') ? 'Cliente: ' : 'C&C: ') + el.textContent;
     }).join('\n') : '';
@@ -1984,7 +2065,7 @@ function notifyCartAddedV110(){
   }
 
   function removeOldBots(){
-    ['cecChatWidget','cecSmartBotV106','cecBotV106','cecAssistV107','cecAssistantV108','cecSalesAiV109','cecSalesAiV111','cecSalesAiV112','cecSalesAiV113','cecSalesAiV114'].forEach(id => {
+    ['cecChatWidget','cecSmartBotV106','cecBotV106','cecAssistV107','cecAssistantV108','cecSalesAiV109','cecSalesAiV111','cecSalesAiV112','cecSalesAiV113','cecSalesAiV114','cecSalesAiV115'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.remove();
     });
@@ -1999,56 +2080,56 @@ function notifyCartAddedV110(){
     root.id = ROOT_ID;
     root.className = 'cec-sales-ai';
     root.innerHTML = `
-      <button class="cec-sales-open" id="cecSalesAiOpen114" type="button" aria-label="Fale com a C&C">
+      <button class="cec-sales-open" id="cecSalesAiOpen115" type="button" aria-label="Fale com a C&C">
         <span>💬</span>
         <strong>Fale com a C&C</strong>
       </button>
 
-      <section class="cec-sales-panel hidden" id="cecSalesAiPanel114">
+      <section class="cec-sales-panel hidden" id="cecSalesAiPanel115">
         <header>
           <div>
             <strong>Fale com a C&C</strong>
-            <small>Atendimento de vendas • v114</small>
+            <small>Atendimento de vendas • v116</small>
           </div>
-          <button type="button" id="cecSalesAiClose114" aria-label="Fechar">×</button>
+          <button type="button" id="cecSalesAiClose115" aria-label="Fechar">×</button>
         </header>
 
-        <main id="cecSalesAiBody114" class="cec-sales-body"></main>
+        <main id="cecSalesAiBody115" class="cec-sales-body"></main>
 
-        <form id="cecSalesAiForm114" class="cec-sales-form">
-          <input id="cecSalesAiInput114" placeholder="Ex.: 10 unidades do 954 preto..." autocomplete="off">
+        <form id="cecSalesAiForm115" class="cec-sales-form">
+          <input id="cecSalesAiInput115" placeholder="Ex.: 1060, TN1060 ou DR1060..." autocomplete="off">
           <button type="submit">Enviar</button>
         </form>
 
-        <button class="cec-sales-wpp" id="cecSalesAiWpp114" type="button">Chamar no WhatsApp</button>
+        <button class="cec-sales-wpp" id="cecSalesAiWpp115" type="button">Chamar no WhatsApp</button>
       </section>
     `;
 
     document.body.appendChild(root);
 
-    const open = document.getElementById('cecSalesAiOpen114');
-    const panel = document.getElementById('cecSalesAiPanel114');
+    const open = document.getElementById('cecSalesAiOpen115');
+    const panel = document.getElementById('cecSalesAiPanel115');
 
     open.addEventListener('click', () => {
       panel.classList.remove('hidden');
       open.classList.add('hidden');
-      const body = document.getElementById('cecSalesAiBody114');
+      const body = document.getElementById('cecSalesAiBody115');
       if(!body.dataset.started){
         body.dataset.started = '1';
-        addText('Olá! Para orçamento, digite código/modelo e quantidade. Exemplo: “10 unidades do 954 preto”.', 'bot');
+        addText('Olá! Para orçamento, digite código/modelo e quantidade. Exemplo: “1060”, “TN1060”, “DR1060” ou “2 toners TN1060”.', 'bot');
       }
-      setTimeout(() => document.getElementById('cecSalesAiInput114')?.focus(), 80);
+      setTimeout(() => document.getElementById('cecSalesAiInput115')?.focus(), 80);
     });
 
-    document.getElementById('cecSalesAiClose114').addEventListener('click', () => {
+    document.getElementById('cecSalesAiClose115').addEventListener('click', () => {
       panel.classList.add('hidden');
       open.classList.remove('hidden');
     });
 
-    document.getElementById('cecSalesAiForm114').addEventListener('submit', e => {
+    document.getElementById('cecSalesAiForm115').addEventListener('submit', e => {
       e.preventDefault();
       e.stopPropagation();
-      const input = document.getElementById('cecSalesAiInput114');
+      const input = document.getElementById('cecSalesAiInput115');
       send(input.value);
       input.value = '';
     });
@@ -2072,7 +2153,7 @@ function notifyCartAddedV110(){
       }
     });
 
-    document.getElementById('cecSalesAiWpp114').addEventListener('click', openWhatsapp);
+    document.getElementById('cecSalesAiWpp115').addEventListener('click', openWhatsapp);
   }
 
   if(document.readyState === 'loading'){
