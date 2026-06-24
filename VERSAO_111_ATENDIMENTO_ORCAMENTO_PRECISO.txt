@@ -1,0 +1,14 @@
+VERSÃO 111 - ATENDIMENTO COM ORÇAMENTO E BUSCA PRECISA
+
+Corrigido:
+- "10 unidades do 954" agora entende quantidade 10 e código 954.
+- Não usa a quantidade "10" como termo de busca.
+- Se o cliente informar 954, busca produtos com 954 exato.
+- Evita puxar toner/outro modelo quando a busca é por cartucho 954.
+- Mostra total estimado para a quantidade.
+- Se houver várias cores/modelos, mostra opções e pede para escolher a correta.
+- Botão adiciona a quantidade solicitada ao carrinho.
+- Carrinho não abre automaticamente ao adicionar.
+
+Base:
+- versão 110.

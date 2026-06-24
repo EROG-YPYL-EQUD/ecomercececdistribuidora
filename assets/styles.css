@@ -3733,7 +3733,35 @@ td{
   overflow-wrap:anywhere !important;
 }
 
-/* V109 - Atendimento de vendas C&C */
+/* V110 - Aviso discreto de produto adicionado */
+.cart-toast-v110{
+  position:fixed;
+  right:18px;
+  bottom:92px;
+  z-index:10000;
+  background:#123c31;
+  color:#fff;
+  border-radius:999px;
+  padding:11px 15px;
+  font-weight:900;
+  box-shadow:0 14px 32px rgba(0,0,0,.24);
+  opacity:0;
+  transform:translateY(8px);
+  pointer-events:none;
+  transition:.2s ease;
+}
+.cart-toast-v110.show{
+  opacity:1;
+  transform:translateY(0);
+}
+@media(max-width:520px){
+  .cart-toast-v110{
+    right:12px;
+    bottom:88px;
+  }
+}
+
+/* V112 - Atendimento de vendas C&C exato */
 .cec-sales-ai{
   position:fixed;
   right:18px;
@@ -3756,7 +3784,7 @@ td{
 }
 .cec-sales-open span{font-size:20px}
 .cec-sales-panel{
-  width:min(410px, calc(100vw - 28px));
+  width:min(420px, calc(100vw - 28px));
   background:#fff;
   color:var(--text);
   border:1px solid var(--line);
@@ -3787,7 +3815,7 @@ td{
   cursor:pointer;
 }
 .cec-sales-body{
-  height:320px;
+  height:330px;
   overflow:auto;
   padding:14px;
   display:flex;
@@ -3803,21 +3831,9 @@ td{
   line-height:1.35;
   white-space:pre-wrap;
 }
-.cec-sales-msg.bot{
-  align-self:flex-start;
-  background:#fff;
-  border:1px solid var(--line);
-}
-.cec-sales-msg.user{
-  align-self:flex-end;
-  background:var(--brand);
-  color:#fff;
-}
-.cec-sales-results{
-  display:flex;
-  flex-direction:column;
-  gap:9px;
-}
+.cec-sales-msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--line)}
+.cec-sales-msg.user{align-self:flex-end;background:var(--brand);color:#fff}
+.cec-sales-results{display:flex;flex-direction:column;gap:9px}
 .cec-sales-product{
   background:#fff;
   border:1px solid var(--line);
@@ -3826,28 +3842,10 @@ td{
   display:grid;
   gap:6px;
 }
-.cec-sales-product strong{
-  color:var(--brand);
-  font-size:14px;
-  line-height:1.25;
-}
-.cec-sales-product small,
-.cec-sales-product em,
-.cec-sales-product span{
-  color:var(--muted);
-  font-size:12px;
-  font-style:normal;
-}
-.cec-sales-product div{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-  align-items:center;
-}
-.cec-sales-product b{
-  color:var(--text);
-  font-size:14px;
-}
+.cec-sales-product strong{color:var(--brand);font-size:14px;line-height:1.25}
+.cec-sales-product small,.cec-sales-product em,.cec-sales-product span{color:var(--muted);font-size:12px;font-style:normal}
+.cec-sales-product div{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.cec-sales-product b{color:var(--text);font-size:14px}
 .cec-sales-product button{
   border:0;
   border-radius:999px;
@@ -3857,66 +3855,12 @@ td{
   padding:9px 12px;
   cursor:pointer;
 }
-.cec-sales-form{
-  display:flex;
-  gap:8px;
-  padding:10px 12px;
-  background:#fff;
-}
-.cec-sales-form input{
-  flex:1;
-  min-width:0;
-  border:1px solid var(--line);
-  border-radius:999px;
-  padding:11px 12px;
-  outline:none;
-}
-.cec-sales-form button,
-.cec-sales-wpp{
-  border:0;
-  border-radius:999px;
-  background:var(--brand);
-  color:#fff;
-  font-weight:900;
-  padding:10px 13px;
-  cursor:pointer;
-}
-.cec-sales-wpp{
-  width:calc(100% - 24px);
-  margin:0 12px 12px;
-  background:#25d366;
-}
+.cec-sales-form{display:flex;gap:8px;padding:10px 12px;background:#fff}
+.cec-sales-form input{flex:1;min-width:0;border:1px solid var(--line);border-radius:999px;padding:11px 12px;outline:none}
+.cec-sales-form button,.cec-sales-wpp{border:0;border-radius:999px;background:var(--brand);color:#fff;font-weight:900;padding:10px 13px;cursor:pointer}
+.cec-sales-wpp{width:calc(100% - 24px);margin:0 12px 12px;background:#25d366}
 @media(max-width:520px){
   .cec-sales-ai{right:12px;bottom:12px}
   .cec-sales-panel{width:calc(100vw - 24px)}
-  .cec-sales-body{height:285px}
-}
-
-
-/* V110 - Aviso discreto de produto adicionado */
-.cart-toast-v110{
-  position:fixed;
-  right:18px;
-  bottom:92px;
-  z-index:10000;
-  background:#123c31;
-  color:#fff;
-  border-radius:999px;
-  padding:11px 15px;
-  font-weight:900;
-  box-shadow:0 14px 32px rgba(0,0,0,.24);
-  opacity:0;
-  transform:translateY(8px);
-  pointer-events:none;
-  transition:.2s ease;
-}
-.cart-toast-v110.show{
-  opacity:1;
-  transform:translateY(0);
-}
-@media(max-width:520px){
-  .cart-toast-v110{
-    right:12px;
-    bottom:88px;
-  }
+  .cec-sales-body{height:290px}
 }

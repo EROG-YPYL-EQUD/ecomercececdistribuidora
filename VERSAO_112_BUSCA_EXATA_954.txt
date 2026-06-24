@@ -1,0 +1,14 @@
+VERSÃO 112 - BUSCA EXATA DO 954
+
+Correção:
+- Para código numérico como 954, a busca só considera NOME/SKU/CATEGORIA do produto.
+- Não usa compatibilidade para código numérico, porque compatibilidade tem vários números de impressoras e puxava item errado.
+- Não deve puxar 662XL quando o cliente digita 954.
+- Cabeçalho do chat mostra v112 para confirmar que a versão nova carregou.
+- Mantém quantidade e total estimado.
+- Carrinho não abre automaticamente.
+
+Teste:
+https://www.cecdistribuidora.com.br/?v=112
+Pergunta:
+quero 10 do 954
