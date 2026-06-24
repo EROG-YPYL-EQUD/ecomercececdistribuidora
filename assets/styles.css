@@ -3733,15 +3733,15 @@ td{
   overflow-wrap:anywhere !important;
 }
 
-/* V107 - Atendimento C&C: botão único, sem balão branco */
-.cec-assist{
+/* V109 - Atendimento de vendas C&C */
+.cec-sales-ai{
   position:fixed;
   right:18px;
   bottom:18px;
   z-index:9999;
   font-family:inherit;
 }
-.cec-assist-open{
+.cec-sales-open{
   display:flex;
   align-items:center;
   gap:10px;
@@ -3754,9 +3754,9 @@ td{
   box-shadow:0 16px 38px rgba(0,0,0,.28);
   cursor:pointer;
 }
-.cec-assist-open span{font-size:20px}
-.cec-assist-panel{
-  width:min(390px, calc(100vw - 28px));
+.cec-sales-open span{font-size:20px}
+.cec-sales-panel{
+  width:min(410px, calc(100vw - 28px));
   background:#fff;
   color:var(--text);
   border:1px solid var(--line);
@@ -3764,7 +3764,7 @@ td{
   box-shadow:0 22px 55px rgba(0,0,0,.30);
   overflow:hidden;
 }
-.cec-assist-panel header{
+.cec-sales-panel header{
   display:flex;
   justify-content:space-between;
   align-items:center;
@@ -3773,9 +3773,9 @@ td{
   color:#fff;
   padding:14px 15px;
 }
-.cec-assist-panel header strong{display:block;font-size:16px}
-.cec-assist-panel header small{display:block;color:rgba(255,255,255,.78);font-weight:700;margin-top:2px}
-.cec-assist-panel header button{
+.cec-sales-panel header strong{display:block;font-size:16px}
+.cec-sales-panel header small{display:block;color:rgba(255,255,255,.78);font-weight:700;margin-top:2px}
+.cec-sales-panel header button{
   border:0;
   background:rgba(255,255,255,.12);
   color:#fff;
@@ -3786,8 +3786,8 @@ td{
   line-height:1;
   cursor:pointer;
 }
-.cec-assist-body{
-  height:275px;
+.cec-sales-body{
+  height:320px;
   overflow:auto;
   padding:14px;
   display:flex;
@@ -3795,48 +3795,75 @@ td{
   gap:9px;
   background:#fbfaf7;
 }
-.cec-assist-msg{
-  max-width:91%;
+.cec-sales-msg{
+  max-width:92%;
   padding:10px 12px;
   border-radius:15px;
   font-size:14px;
   line-height:1.35;
   white-space:pre-wrap;
 }
-.cec-assist-msg.bot{
+.cec-sales-msg.bot{
   align-self:flex-start;
   background:#fff;
   border:1px solid var(--line);
 }
-.cec-assist-msg.user{
+.cec-sales-msg.user{
   align-self:flex-end;
   background:var(--brand);
   color:#fff;
 }
-.cec-assist-quick{
+.cec-sales-results{
   display:flex;
-  gap:7px;
-  flex-wrap:wrap;
-  padding:11px 12px 4px;
-  background:#fff;
+  flex-direction:column;
+  gap:9px;
 }
-.cec-assist-quick button{
-  border:1px solid var(--line);
+.cec-sales-product{
   background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:11px;
+  display:grid;
+  gap:6px;
+}
+.cec-sales-product strong{
   color:var(--brand);
-  border-radius:999px;
-  padding:7px 10px;
-  font-weight:900;
+  font-size:14px;
+  line-height:1.25;
+}
+.cec-sales-product small,
+.cec-sales-product em,
+.cec-sales-product span{
+  color:var(--muted);
   font-size:12px;
+  font-style:normal;
+}
+.cec-sales-product div{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+}
+.cec-sales-product b{
+  color:var(--text);
+  font-size:14px;
+}
+.cec-sales-product button{
+  border:0;
+  border-radius:999px;
+  background:var(--brand);
+  color:#fff;
+  font-weight:900;
+  padding:9px 12px;
   cursor:pointer;
 }
-.cec-assist-form{
+.cec-sales-form{
   display:flex;
   gap:8px;
   padding:10px 12px;
   background:#fff;
 }
-.cec-assist-form input{
+.cec-sales-form input{
   flex:1;
   min-width:0;
   border:1px solid var(--line);
@@ -3844,8 +3871,8 @@ td{
   padding:11px 12px;
   outline:none;
 }
-.cec-assist-form button,
-.cec-assist-wpp{
+.cec-sales-form button,
+.cec-sales-wpp{
   border:0;
   border-radius:999px;
   background:var(--brand);
@@ -3854,13 +3881,42 @@ td{
   padding:10px 13px;
   cursor:pointer;
 }
-.cec-assist-wpp{
+.cec-sales-wpp{
   width:calc(100% - 24px);
   margin:0 12px 12px;
   background:#25d366;
 }
 @media(max-width:520px){
-  .cec-assist{right:12px;bottom:12px}
-  .cec-assist-panel{width:calc(100vw - 24px)}
-  .cec-assist-body{height:255px}
+  .cec-sales-ai{right:12px;bottom:12px}
+  .cec-sales-panel{width:calc(100vw - 24px)}
+  .cec-sales-body{height:285px}
+}
+
+
+/* V110 - Aviso discreto de produto adicionado */
+.cart-toast-v110{
+  position:fixed;
+  right:18px;
+  bottom:92px;
+  z-index:10000;
+  background:#123c31;
+  color:#fff;
+  border-radius:999px;
+  padding:11px 15px;
+  font-weight:900;
+  box-shadow:0 14px 32px rgba(0,0,0,.24);
+  opacity:0;
+  transform:translateY(8px);
+  pointer-events:none;
+  transition:.2s ease;
+}
+.cart-toast-v110.show{
+  opacity:1;
+  transform:translateY(0);
+}
+@media(max-width:520px){
+  .cart-toast-v110{
+    right:12px;
+    bottom:88px;
+  }
 }

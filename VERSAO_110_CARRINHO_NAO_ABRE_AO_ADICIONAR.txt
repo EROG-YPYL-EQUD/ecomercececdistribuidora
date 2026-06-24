@@ -1,0 +1,11 @@
+VERSÃO 110 - CARRINHO NÃO ABRE AO ADICIONAR
+
+Corrigido:
+- Ao adicionar produto, o carrinho NÃO abre automaticamente.
+- Cliente pode continuar adicionando produtos.
+- Carrinho só abre quando clicar em Ver Carrinho / botão do carrinho.
+- Mostra apenas um aviso discreto: "Produto adicionado ao carrinho".
+- Ajustado também no atendimento "Fale com a C&C".
+
+Base:
+- versão 109 atendimento de vendas melhorado.

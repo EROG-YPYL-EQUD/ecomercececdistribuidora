@@ -1,0 +1,18 @@
+VERSÃO 109 - ATENDIMENTO DE VENDAS MELHORADO
+
+Base limpa:
+- versão 102 com domínio www.cecdistribuidora.com.br
+
+Mudanças:
+- Removidos botões rápidos da conversa para acabar com envio duplicado.
+- Fica só campo de mensagem + botão WhatsApp.
+- Busca produtos cadastrados por nome, SKU, marca, categoria, descrição e compatibilidade.
+- Quando encontra produto, mostra card com preço, estoque e botão "Adicionar ao carrinho".
+- Melhor resposta para modelo da impressora/código de toner/cartucho.
+- Atendimento mais focado em venda: modelo, produto, quantidade e carrinho.
+- Não aparece no Admin.
+
+Teste:
+- Subir todos os arquivos.
+- Aguardar Vercel Ready.
+- Abrir: https://www.cecdistribuidora.com.br/?v=109
