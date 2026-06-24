@@ -1,0 +1,12 @@
+VERSÃO 107 - BOTÃO ÚNICO DE ATENDIMENTO
+
+Corrigido:
+- Removido o balão branco "Olá! Precisa de ajuda?".
+- Fica apenas um botão: "Fale com a C&C".
+- Remove qualquer bot antigo que tenha ficado carregado.
+- Não duplica mensagem.
+- Não aparece no Admin.
+- Atendimento abre só quando o cliente clica no botão.
+- Respostas melhoradas para modelo da impressora e busca de produtos cadastrados.
+
+Base limpa: versão 102 com domínio www.cecdistribuidora.com.br.

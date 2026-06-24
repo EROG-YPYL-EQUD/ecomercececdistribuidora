@@ -3733,60 +3733,49 @@ td{
   overflow-wrap:anywhere !important;
 }
 
-
-/* V103 - Botão Fale com a C&C */
-.cec-chat-widget{
+/* V107 - Atendimento C&C: botão único, sem balão branco */
+.cec-assist{
   position:fixed;
   right:18px;
   bottom:18px;
   z-index:9999;
   font-family:inherit;
 }
-.cec-chat-float{
+.cec-assist-open{
   display:flex;
   align-items:center;
-  gap:9px;
+  gap:10px;
   border:0;
   border-radius:999px;
-  background:var(--brand);
+  background:linear-gradient(135deg,#d9ad63,#f0c982);
   color:#fff;
-  padding:13px 17px;
-  font-weight:900;
-  box-shadow:0 16px 38px rgba(0,0,0,.25);
+  padding:14px 20px;
+  font-weight:950;
+  box-shadow:0 16px 38px rgba(0,0,0,.28);
   cursor:pointer;
 }
-.cec-chat-float span{
-  font-size:20px;
-}
-.cec-chat-panel{
-  width:min(360px, calc(100vw - 28px));
+.cec-assist-open span{font-size:20px}
+.cec-assist-panel{
+  width:min(390px, calc(100vw - 28px));
   background:#fff;
   color:var(--text);
   border:1px solid var(--line);
   border-radius:22px;
-  box-shadow:0 22px 55px rgba(0,0,0,.28);
+  box-shadow:0 22px 55px rgba(0,0,0,.30);
   overflow:hidden;
 }
-.cec-chat-head{
+.cec-assist-panel header{
   display:flex;
   justify-content:space-between;
-  gap:12px;
   align-items:center;
+  gap:12px;
   background:linear-gradient(135deg,#0b2a23,#17684f);
   color:#fff;
   padding:14px 15px;
 }
-.cec-chat-head strong{
-  display:block;
-  font-size:16px;
-}
-.cec-chat-head small{
-  display:block;
-  color:rgba(255,255,255,.75);
-  font-weight:700;
-  margin-top:2px;
-}
-.cec-chat-head button{
+.cec-assist-panel header strong{display:block;font-size:16px}
+.cec-assist-panel header small{display:block;color:rgba(255,255,255,.78);font-weight:700;margin-top:2px}
+.cec-assist-panel header button{
   border:0;
   background:rgba(255,255,255,.12);
   color:#fff;
@@ -3797,8 +3786,8 @@ td{
   line-height:1;
   cursor:pointer;
 }
-.cec-chat-body{
-  height:250px;
+.cec-assist-body{
+  height:275px;
   overflow:auto;
   padding:14px;
   display:flex;
@@ -3806,32 +3795,32 @@ td{
   gap:9px;
   background:#fbfaf7;
 }
-.cec-chat-msg{
-  max-width:88%;
+.cec-assist-msg{
+  max-width:91%;
   padding:10px 12px;
   border-radius:15px;
   font-size:14px;
   line-height:1.35;
   white-space:pre-wrap;
 }
-.cec-chat-msg.bot{
+.cec-assist-msg.bot{
   align-self:flex-start;
   background:#fff;
   border:1px solid var(--line);
 }
-.cec-chat-msg.user{
+.cec-assist-msg.user{
   align-self:flex-end;
   background:var(--brand);
   color:#fff;
 }
-.cec-chat-quick{
+.cec-assist-quick{
   display:flex;
   gap:7px;
   flex-wrap:wrap;
   padding:11px 12px 4px;
   background:#fff;
 }
-.cec-chat-quick button{
+.cec-assist-quick button{
   border:1px solid var(--line);
   background:#fff;
   color:var(--brand);
@@ -3841,13 +3830,13 @@ td{
   font-size:12px;
   cursor:pointer;
 }
-.cec-chat-form{
+.cec-assist-form{
   display:flex;
   gap:8px;
   padding:10px 12px;
   background:#fff;
 }
-.cec-chat-form input{
+.cec-assist-form input{
   flex:1;
   min-width:0;
   border:1px solid var(--line);
@@ -3855,8 +3844,8 @@ td{
   padding:11px 12px;
   outline:none;
 }
-.cec-chat-form button,
-.cec-chat-whatsapp{
+.cec-assist-form button,
+.cec-assist-wpp{
   border:0;
   border-radius:999px;
   background:var(--brand);
@@ -3865,70 +3854,13 @@ td{
   padding:10px 13px;
   cursor:pointer;
 }
-.cec-chat-whatsapp{
+.cec-assist-wpp{
   width:calc(100% - 24px);
   margin:0 12px 12px;
   background:#25d366;
 }
 @media(max-width:520px){
-  .cec-chat-widget{
-    right:12px;
-    bottom:12px;
-  }
-  .cec-chat-panel{
-    width:calc(100vw - 24px);
-  }
-  .cec-chat-body{
-    height:240px;
-  }
-}
-
-
-/* V104 - Mensagem de abertura do botão Fale com a C&C */
-.cec-chat-opening{
-  margin:0 0 10px auto;
-  width:max-content;
-  max-width:260px;
-  background:#fff;
-  color:var(--text);
-  border:1px solid var(--line);
-  border-radius:18px 18px 6px 18px;
-  padding:10px 13px;
-  box-shadow:0 14px 32px rgba(0,0,0,.18);
-  animation:cecOpeningPulse 2.8s ease-in-out infinite;
-}
-.cec-chat-opening strong{
-  display:block;
-  color:var(--brand);
-  font-size:14px;
-  line-height:1.15;
-}
-.cec-chat-opening span{
-  display:block;
-  color:var(--muted);
-  font-size:12px;
-  font-weight:800;
-  margin-top:3px;
-}
-@keyframes cecOpeningPulse{
-  0%,100%{transform:translateY(0)}
-  50%{transform:translateY(-3px)}
-}
-@media(max-width:520px){
-  .cec-chat-opening{
-    max-width:230px;
-    font-size:13px;
-  }
-}
-
-
-/* V105 - Correção de clique/resposta do atendimento */
-.cec-chat-form input,
-.cec-chat-form button,
-.cec-chat-quick button,
-.cec-chat-whatsapp{
-  pointer-events:auto;
-}
-.cec-chat-form button{
-  min-width:76px;
+  .cec-assist{right:12px;bottom:12px}
+  .cec-assist-panel{width:calc(100vw - 24px)}
+  .cec-assist-body{height:255px}
 }
