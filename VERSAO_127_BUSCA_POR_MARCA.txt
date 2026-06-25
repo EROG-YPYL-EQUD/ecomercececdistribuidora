@@ -1,0 +1,24 @@
+VERSÃO 127 - IA BUSCA POR MARCA
+
+Corrigido:
+- Agora a IA procura por marca também.
+- Aceita marcas curtas como HP e OKI, que antes podiam não buscar por terem só 2 letras.
+- Exemplos:
+  HP
+  Brother
+  Epson
+  Canon
+  Samsung
+  HP cartucho
+  Brother toner
+  Epson tinta
+- Continua buscando por código/modelo:
+  954
+  662XL
+  TN1060
+  DR1060
+- Mantidas correções anteriores:
+  login admin corrigido,
+  refazer orçamento ou novo produto,
+  texto da IA preto/visível,
+  cache forçado com app.js?v=127 e styles.css?v=127.

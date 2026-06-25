@@ -1,0 +1,19 @@
+VERSÃO 128 - IA RECONHECE MARCAS CADASTRADAS
+
+Corrigido:
+- A IA agora monta a lista de marcas automaticamente pelos produtos cadastrados no admin.
+- Se cadastrar uma nova marca no campo Marca do produto, a IA passa a reconhecer essa marca.
+- Funciona também com marcas curtas de 2 letras cadastradas, como HP ou OKI.
+- Exemplos:
+  HP
+  Brother
+  Epson
+  Canon
+  marca nova cadastrada no admin
+  HP cartucho
+  Brother toner
+- Mantidas correções anteriores:
+  admin login corrigido,
+  refazer orçamento ou novo produto,
+  texto da IA preto/visível,
+  cache forçado com app.js?v=128 e styles.css?v=128.

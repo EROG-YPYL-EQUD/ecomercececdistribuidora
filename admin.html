@@ -8,7 +8,7 @@
  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
  <meta name="robots" content="noindex,nofollow" />
  <title>Painel Restrito | C & C Distribuidora</title>
- <link rel="stylesheet" href="assets/styles.css?v=125" />
+ <link rel="stylesheet" href="assets/styles.css?v=129" />
   <link rel="canonical" href="https://www.cecdistribuidora.com.br/admin.html">
 </head>
 <body class="admin-page">
@@ -237,11 +237,10 @@
   </section>
  </div>
  <div class="toast" id="toast"></div>
- 
-<script>
-(function(){
-  const ADMIN_PASSWORD_FALLBACK = 'admin123';
 
+<script>
+/* V126 - Admin sem login fallback antigo */
+(function(){
   function qs(sel){ return document.querySelector(sel); }
   function qsa(sel){ return Array.from(document.querySelectorAll(sel)); }
 
@@ -266,42 +265,8 @@
   window.adminShowPanel = adminShowPanel;
   window.adminShowLogin = adminShowLogin;
 
-  function bindAdminLoginFallback(){
-    const form = qs('#adminLoginForm');
-    const input = qs('#adminPassword');
-    const error = qs('#adminLoginError');
-
-    if(sessionStorage.getItem('cec_admin_logged') === '1'){
-      adminShowPanel();
-    }else{
-      adminShowLogin();
-    }
-
-    if(form && !form.dataset.fallbackBound){
-      form.dataset.fallbackBound = '1';
-      form.addEventListener('submit', function(e){
-        e.preventDefault();
-        const pass = (input && input.value ? input.value : '').trim();
-        if(pass === ADMIN_PASSWORD_FALLBACK){
-          sessionStorage.setItem('cec_admin_logged','1');
-          if(error) error.style.display = 'none';
-          adminShowPanel();
-        }else{
-          if(error) error.style.display = 'block';
-          alert('Senha incorreta');
-        }
-      });
-    }
-
-    const logout = qs('#logoutBtn');
-    if(logout && !logout.dataset.fallbackBound){
-      logout.dataset.fallbackBound = '1';
-      logout.addEventListener('click', function(){
-        sessionStorage.removeItem('cec_admin_logged');
-        adminShowLogin();
-      });
-    }
-
+  function bindAdminTabsOnly(){
+    // Não faz login aqui. O login real fica somente no Firebase Authentication dentro do app.js.
     qsa('.tab').forEach(function(tab){
       if(tab.dataset.fallbackBound) return;
       tab.dataset.fallbackBound = '1';
@@ -316,9 +281,9 @@
   }
 
   if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', bindAdminLoginFallback);
+    document.addEventListener('DOMContentLoaded', bindAdminTabsOnly);
   }else{
-    bindAdminLoginFallback();
+    bindAdminTabsOnly();
   }
 })();
 </script>
@@ -328,7 +293,7 @@
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-analytics-compat.js"></script>
 <script src="assets/firebase-config.js"></script>
-<script src="assets/app.js?v=125"></script>
+<script src="assets/app.js?v=129"></script>
 
 <script>
 /* ADMIN_ORDERS_FALLBACK_V35 */

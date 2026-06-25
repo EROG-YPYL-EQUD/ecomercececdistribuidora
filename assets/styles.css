@@ -3923,3 +3923,78 @@ td{
 .cec-sales-wpp{
   color:#fff !important;
 }
+
+
+/* V127 - busca por marca e texto visível */
+.cec-sales-msg.bot,
+.cec-sales-product,
+.cec-sales-choice,
+.cec-sales-product strong,
+.cec-sales-choice strong,
+.cec-sales-product b,
+.cec-sales-product span,
+.cec-sales-product small,
+.cec-sales-choice small{
+  color:#111 !important;
+}
+.cec-sales-msg.user,
+.cec-sales-product button,
+.cec-sales-form button,
+.cec-sales-wpp{
+  color:#fff !important;
+}
+.cec-sales-form input{
+  color:#111 !important;
+  background:#fff !important;
+  caret-color:#111 !important;
+}
+
+
+/* V128 - marcas cadastradas automaticamente */
+.cec-sales-msg.bot,
+.cec-sales-product,
+.cec-sales-choice,
+.cec-sales-product strong,
+.cec-sales-choice strong,
+.cec-sales-product b,
+.cec-sales-product span,
+.cec-sales-product small,
+.cec-sales-choice small{
+  color:#111 !important;
+}
+.cec-sales-msg.user,
+.cec-sales-product button,
+.cec-sales-form button,
+.cec-sales-wpp{
+  color:#fff !important;
+}
+.cec-sales-form input{
+  color:#111 !important;
+  background:#fff !important;
+  caret-color:#111 !important;
+}
+
+
+/* V129 - busca parcial por nome/código */
+.cec-sales-msg.bot,
+.cec-sales-product,
+.cec-sales-choice,
+.cec-sales-product strong,
+.cec-sales-choice strong,
+.cec-sales-product b,
+.cec-sales-product span,
+.cec-sales-product small,
+.cec-sales-choice small{
+  color:#111 !important;
+}
+.cec-sales-msg.user,
+.cec-sales-product button,
+.cec-sales-form button,
+.cec-sales-wpp{
+  color:#fff !important;
+}
+.cec-sales-form input{
+  color:#111 !important;
+  background:#fff !important;
+  caret-color:#111 !important;
+}

@@ -1,0 +1,16 @@
+VERSÃO 126 - ADMIN LOGIN CORRIGIDO
+
+Corrigido:
+- Removido o login antigo/fallback do admin.html que comparava senha com "admin123".
+- Esse fallback era o motivo de aparecer "Senha incorreta" mesmo quando o Firebase fazia login corretamente.
+- Agora o formulário de login fica somente com Firebase Authentication.
+- Ao logar corretamente, não deve aparecer alerta de senha incorreta.
+- Mantida a lógica do site/chat da versão 125.
+- HTML força app.js?v=126 e styles.css?v=126 para limpar cache.
+
+Teste:
+1. Subir no GitHub.
+2. Esperar Vercel ficar Ready.
+3. Abrir /admin.html?v=126
+4. Ctrl+F5.
+5. Entrar com e-mail e senha do Firebase Authentication.

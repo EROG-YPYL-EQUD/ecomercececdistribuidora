@@ -992,7 +992,7 @@ function setupAdmin(){
   }else{
     auth.onAuthStateChanged(user => {
       const errorVisible = $('#adminLoginError')?.style.display === 'block';
-      if(user && !errorVisible) showAdminPanel(user);
+      if(user){ if($('#adminLoginError')){ $('#adminLoginError').textContent=''; $('#adminLoginError').style.display='none'; } showAdminPanel(user); }
       else if(!user) showAdminLogin();
     });
   }
@@ -1717,16 +1717,16 @@ function notifyCartAddedV110(){
       if(stop.has(w)) return;
       if(qty && String(qty) === w) return;
 
-      if(/^(tn|dr|cf|ce|q|mlt|d)$/.test(w) && parts[i+1] && /^\d{2,5}[a-z0-9]*$/.test(parts[i+1])){
+      // Prefixo separado: "tk 1147", "tn 1000", "dr 1000"
+      if(/^[a-z]{1,8}$/.test(w) && parts[i+1] && /^\d{2,5}[a-z0-9]*$/.test(parts[i+1])){
         const combined = w + parts[i+1];
         if(!codes.includes(combined)) codes.push(combined);
         return;
       }
 
       const isCode = (
-        /^\d{3,5}[a-z]{0,3}$/.test(w) ||
-        /^[a-z]{1,8}[-]?\d{2,5}[a-z0-9]{0,5}$/.test(w) ||
-        /^(tn|dr|cf|ce|q|mlt|d)\d+[a-z0-9]*$/.test(w)
+        /^\d{3,5}[a-z]{0,4}$/.test(w) ||
+        /^[a-z]{1,10}[-]?\d{2,6}[a-z0-9]{0,8}$/.test(w)
       );
 
       if(isCode && !codes.includes(w)) codes.push(w);
@@ -1782,7 +1782,7 @@ function notifyCartAddedV110(){
   }
 
   function isPrefixCode(code){
-    return /^(tn|dr|cf|ce|q|mlt|d)[-]?\d+/i.test(String(code || ''));
+    return /^[a-z]{1,10}[-]?\d{2,6}/i.test(String(code || ''));
   }
 
   function codeNumber(code){
@@ -1799,19 +1799,23 @@ function notifyCartAddedV110(){
       const compactCode = c.replace(/[-\s]/g, '');
       if(compactTarget.includes(compactCode)) return true;
 
-      const prefix = compactCode.match(/^[a-z]+/)[0];
+      const prefixMatch = compactCode.match(/^[a-z]+/);
       const number = codeNumber(compactCode);
-      if(!number) return false;
+      if(!prefixMatch || !number) return false;
 
+      const prefix = prefixMatch[0];
       const rx = new RegExp('(^|[^a-z0-9])' + prefix + '[- ]?' + number + '([a-z0-9]*)([^a-z0-9]|$)', 'i');
-      return rx.test(target);
+      return rx.test(target) || compactTarget.includes(prefix + number);
     }
 
-    if(/^\d{2,5}[a-z]*$/.test(c)){
-      const number = c.match(/\d{2,5}/)[0];
-      const standalone = new RegExp('(^|[^a-z0-9])' + number + '([a-z]{0,3})([^a-z0-9]|$)', 'i');
-      const prefixed = new RegExp('(^|[^a-z0-9])(tn|dr|cf|ce|q|mlt|d)[- ]?' + number + '([a-z0-9]*)([^a-z0-9]|$)', 'i');
-      return standalone.test(target) || prefixed.test(target);
+    if(/^\d{2,6}[a-z]*$/.test(c)){
+      const number = c.match(/\d{2,6}/)[0];
+
+      // Puxa número em qualquer código/nome: 1000 acha TN1000 e DR1000; 1147 acha TK1147.
+      const standalone = new RegExp('(^|[^a-z0-9])' + number + '([a-z]{0,4})([^a-z0-9]|$)', 'i');
+      const prefixed = new RegExp('(^|[^a-z0-9])[a-z]{1,10}[- ]?' + number + '([a-z0-9]*)([^a-z0-9]|$)', 'i');
+
+      return standalone.test(target) || prefixed.test(target) || compactTarget.includes(number);
     }
 
     const safe = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\-/g, '[- ]?');
@@ -1856,45 +1860,134 @@ function notifyCartAddedV110(){
 
   function searchGeneral(text){
     const q = clean(text);
+    const products = getProducts();
+
     const stop = new Set([
       'ola','bom','boa','dia','tarde','noite','voce','voces','tem','tenho','queria',
       'quero','preciso','saber','qual','quais','produto','produtos','serve','servem',
       'impressora','modelo','para','pra','pro','uma','umas','uns','com','sem','valor',
       'preco','preço','orcamento','orçamento','cotacao','cotação','comprar','compra',
-      'compatível','compativel','toner','cartucho','cilindro','fotocondutor','tinta',
-      'pedido','pedi','unidades','unidade','und','un','entrega','frete','prazo','cep'
+      'compatível','compativel','pedido','pedi','unidades','unidade','und','un',
+      'entrega','frete','prazo','cep'
     ]);
-    const words = q.split(' ').filter(w => w.length >= 3 && !stop.has(w) && !/^\d+$/.test(w));
-    if(!words.length) return [];
 
-    const desiredKind = kindFromText(text);
+    const fixedAliases = {
+      hp: ['hp','hewlett','packard'],
+      brother: ['brother'],
+      epson: ['epson'],
+      canon: ['canon'],
+      samsung: ['samsung'],
+      lexmark: ['lexmark'],
+      ricoh: ['ricoh'],
+      pantum: ['pantum'],
+      xerox: ['xerox'],
+      sharp: ['sharp'],
+      kyocera: ['kyocera'],
+      okidata: ['okidata','oki'],
+      oki: ['oki','okidata'],
+      elgin: ['elgin']
+    };
 
-    return getProducts().map(p => {
+    const dynamicBrands = {};
+    products.forEach(p => {
+      const b = clean(p.brand || '');
+      if(b && b.length >= 2){
+        dynamicBrands[b] = Array.from(new Set([b].concat(b.split(' ').filter(x => x.length >= 2))));
+      }
+    });
+
+    const brandAliases = Object.assign({}, fixedAliases, dynamicBrands);
+
+    const parts = q.split(' ').filter(Boolean);
+
+    const requestedBrands = [];
+    Object.keys(brandAliases).forEach(brand => {
+      const aliases = brandAliases[brand] || [brand];
+      if(aliases.some(alias => {
+        const safe = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp('(^|\\s)' + safe + '(\\s|$)').test(q);
+      })){
+        requestedBrands.push(brand);
+      }
+    });
+
+    // Fragmentos de busca: aceita 2+ caracteres.
+    // Ex.: tk, hp, 1000, 1147, tk1147.
+    let words = parts.filter(w => {
+      if(stop.has(w)) return false;
+      if(w.length < 2) return false;
+      return /^[a-z0-9\-]+$/.test(w);
+    });
+
+    const requestedKind = kindFromText(text);
+
+    if(!words.length && requestedBrands.length){
+      words = requestedBrands.slice();
+    }
+
+    if(!words.length && !requestedBrands.length) return [];
+
+    return products.map(p => {
       const all = field(p);
+      const primary = clean([p.name, p.sku, p.brand, p.category].filter(Boolean).join(' '));
+      const compactPrimary = primary.replace(/[-\s]/g, '');
+      const brandText = clean([p.brand, p.name, p.sku, p.category].filter(Boolean).join(' '));
       let score = 0;
+
       words.forEach(w => {
-        if(all.includes(w)) score += 1;
-        if(clean(p.name).includes(w)) score += 4;
-        if(clean(p.sku).includes(w)) score += 6;
-        if(clean(p.brand).includes(w)) score += 2;
+        const compactW = w.replace(/[-\s]/g, '');
+
+        if(primary.includes(w)) score += 8;
+        if(compactPrimary.includes(compactW)) score += 10;
+
+        if(clean(p.name).includes(w) || clean(p.name).replace(/[-\s]/g, '').includes(compactW)) score += 10;
+        if(clean(p.sku).includes(w) || clean(p.sku).replace(/[-\s]/g, '').includes(compactW)) score += 14;
+        if(clean(p.brand).includes(w)) score += 12;
+        if(clean(p.category).includes(w)) score += 4;
+        if(all.includes(w)) score += 2;
+
+        // código numérico parcial: 1000, 1147
+        if(/^\d{2,6}$/.test(w) && compactPrimary.includes(w)) score += 18;
+
+        // prefixo curto: tk, tn, dr, cf, ce, hp etc.
+        if(/^[a-z]{2,6}$/.test(w) && compactPrimary.includes(w)) score += 12;
+      });
+
+      requestedBrands.forEach(brand => {
+        const aliases = brandAliases[brand] || [brand];
+        const matchesBrand = aliases.some(alias => brandText.includes(alias));
+        if(matchesBrand) score += 25;
+        else score -= 8;
       });
 
       const pk = kindProduct(p);
-      if(desiredKind && pk && desiredKind !== pk) score -= 20;
-      if(desiredKind && pk === desiredKind) score += 5;
+      if(requestedKind && pk && requestedKind !== pk) score -= 20;
+      if(requestedKind && pk === requestedKind) score += 8;
+      if(requestedKind && requestedBrands.length && pk === requestedKind) score += 10;
 
       return {p, score};
     })
     .filter(x => x.score > 0)
     .sort((a,b) => b.score - a.score)
-    .slice(0, 5)
+    .slice(0, 10)
     .map(x => x.p);
   }
 
   function searchCatalog(text){
     const byCode = searchByCodes(text);
-    if(byCode.length) return byCode;
-    return searchGeneral(text);
+    const byGeneral = searchGeneral(text);
+    const seen = new Set();
+    const merged = [];
+
+    byCode.concat(byGeneral).forEach(p => {
+      const id = String(p.id || p.sku || p.name);
+      if(!seen.has(id)){
+        seen.add(id);
+        merged.push(p);
+      }
+    });
+
+    return merged.slice(0, 10);
   }
 
   function filterByVariant(list, text){
@@ -2218,7 +2311,7 @@ function notifyCartAddedV110(){
     if(wantsQuote(msg)){
       addText('Claro. Para montar o orçamento, me informe modelo/código do produto e quantidade. Exemplo: “10 unidades do 954 preto”, “10 954” ou “2 TN1060”.', 'bot');
     }else{
-      addText('Digite o código/modelo do produto. Para orçamento, envie também a quantidade. Exemplo: “954 preto”, “10 954” ou “2 TN1060”.', 'bot');
+      addText('Digite código, parte do código, modelo, marca ou produto. Exemplo: “TK”, “1147”, “1000”, “HP”, “954 preto” ou “2 TN1060”.', 'bot');
     }
   }
 
@@ -2296,7 +2389,7 @@ function notifyCartAddedV110(){
         <main id="cecSalesAiBody125" class="cec-sales-body"></main>
 
         <form id="cecSalesAiForm125" class="cec-sales-form">
-          <input id="cecSalesAiInput125" placeholder="Ex.: 954 preto, entrega, acompanhar pedido..." autocomplete="off">
+          <input id="cecSalesAiInput125" placeholder="Ex.: TK, 1147, 1000, HP, entrega..." autocomplete="off">
           <button type="submit">Enviar</button>
         </form>
 
@@ -2315,7 +2408,7 @@ function notifyCartAddedV110(){
       const body = document.getElementById('cecSalesAiBody125');
       if(!body.dataset.started){
         body.dataset.started = '1';
-        addText('Olá! Posso ajudar com produtos, orçamento, entrega, pagamento, trocas/devoluções ou acompanhar pedido.', 'bot');
+        addText('Olá! Posso ajudar com produtos, marcas, códigos parciais, orçamento, entrega, pagamento, trocas/devoluções ou acompanhar pedido.', 'bot');
       }
       setTimeout(() => document.getElementById('cecSalesAiInput125')?.focus(), 80);
     });

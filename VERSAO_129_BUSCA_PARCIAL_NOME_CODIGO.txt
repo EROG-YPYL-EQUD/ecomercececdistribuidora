@@ -1,0 +1,22 @@
+VERSÃO 129 - IA BUSCA POR PARTE DO NOME E DO CÓDIGO
+
+Corrigido:
+- A IA não precisa do nome completo.
+- Busca por parte do nome/código/SKU/marca/categoria.
+
+Exemplos:
+- "TK" puxa todos os produtos que têm TK no nome ou código.
+- "1147" puxa todos os produtos que têm 1147 no nome ou código.
+- "TK1147" puxa produtos TK1147.
+- "1000" puxa TN1000, DR1000 e qualquer produto que tenha 1000.
+- "DR1000" puxa DR1000.
+- "TN1000" puxa TN1000.
+- "HP" puxa produtos HP.
+- "Brother toner" puxa toners Brother.
+
+Mantido:
+- Marcas cadastradas no admin entram automaticamente na busca.
+- Pergunta se número é novo produto ou refazer orçamento.
+- Login admin corrigido.
+- Texto da IA preto/visível.
+- Cache forçado com app.js?v=129 e styles.css?v=129.
