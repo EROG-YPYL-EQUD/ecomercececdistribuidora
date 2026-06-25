@@ -1587,12 +1587,12 @@ function notifyCartAddedV110(){
   }, true);
 })();
 
-/* V122 - Atendimento C&C: limpar chat, pedidos, entrega e produto sem orçamento automático */
+/* V125 - Atendimento C&C: pergunta se número é novo produto ou quantidade */
 (function(){
-  if(window.__CEC_VENDAS_IA_V122__) return;
-  window.__CEC_VENDAS_IA_V122__ = true;
+  if(window.__CEC_VENDAS_IA_V125__) return;
+  window.__CEC_VENDAS_IA_V125__ = true;
 
-  const ROOT_ID = 'cecSalesAiV122';
+  const ROOT_ID = 'cecSalesAiV125';
   const WHATSAPP = '556730424796';
 
   let lastMessage = '';
@@ -1603,6 +1603,10 @@ function notifyCartAddedV110(){
   let pendingProduct = null;
   let pendingMode = 'product';
   let pendingTopic = '';
+
+  let pendingAmbiguous = null; 
+  // { typed, previousProduct, questionType }
+  let lastQuotedProduct = null;
 
   function clean(v){
     return String(v || '')
@@ -1670,6 +1674,11 @@ function notifyCartAddedV110(){
     return digits.length === 8 ? digits : '';
   }
 
+  function looksLikeCodeOnly(text){
+    const q = clean(text).replace(/\s+/g, '');
+    return /^(\d{3,5}[a-z]{0,3}|(tn|dr|cf|ce|q|mlt|d)[-]?\d{2,5}[a-z0-9]*)$/.test(q);
+  }
+
   function qtyFrom(text){
     const q = clean(text);
 
@@ -1685,7 +1694,9 @@ function notifyCartAddedV110(){
     m = q.match(/\b(qtd|quantidade)\s*(\d{1,4})\b/);
     if(m) return Number(m[2]);
 
-    if(/^\d{1,4}$/.test(q) && pendingProduct) return Number(q);
+    // Depois de um produto encontrado, só número de 1 ou 2 dígitos vira quantidade.
+    // Número com 3+ dígitos é código/modelo ou ambíguo.
+    if(/^\d{1,2}$/.test(q) && pendingProduct) return Number(q);
 
     return 0;
   }
@@ -1893,7 +1904,7 @@ function notifyCartAddedV110(){
   }
 
   function addText(text, who){
-    const body = document.getElementById('cecSalesAiBody122');
+    const body = document.getElementById('cecSalesAiBody125');
     if(!body || !text) return;
     const div = document.createElement('div');
     div.className = 'cec-sales-msg ' + who;
@@ -1902,8 +1913,16 @@ function notifyCartAddedV110(){
     body.scrollTop = body.scrollHeight;
   }
 
+  function clearPending(){
+    pendingProducts = [];
+    pendingQty = 0;
+    pendingProduct = null;
+    pendingMode = 'product';
+    pendingAmbiguous = null;
+  }
+
   function clearChat(){
-    const body = document.getElementById('cecSalesAiBody122');
+    const body = document.getElementById('cecSalesAiBody125');
     if(body) body.innerHTML = '';
     clearPending();
     pendingTopic = '';
@@ -1911,7 +1930,7 @@ function notifyCartAddedV110(){
   }
 
   function showChoices(list, originalText, mode){
-    const body = document.getElementById('cecSalesAiBody122');
+    const body = document.getElementById('cecSalesAiBody125');
     if(!body || !list.length) return;
 
     const qty = qtyFrom(originalText);
@@ -1932,7 +1951,7 @@ function notifyCartAddedV110(){
           <small>${esc([kindProduct(p), productColor(p), p.sku ? 'Cód.: '+p.sku : '', money(p.price)].filter(Boolean).join(' • '))}</small>
         </article>
       `).join('')}
-      <div class="cec-sales-msg bot">Responda pelo número da opção ou pelo modelo/cor. Exemplo: “1”, “2”, “preto”, “colorido”, “TN1060” ou “DR1060”.</div>
+      <div class="cec-sales-msg bot">Responda pelo número da opção ou pelo modelo/cor. Exemplo: “1”, “2”, “preto”, “TN1060” ou “DR1060”.</div>
     `;
     body.appendChild(wrap);
     body.scrollTop = body.scrollHeight;
@@ -1940,7 +1959,9 @@ function notifyCartAddedV110(){
 
   function showProduct(product){
     pendingProduct = product;
-    const body = document.getElementById('cecSalesAiBody122');
+    lastQuotedProduct = null;
+    pendingAmbiguous = null;
+    const body = document.getElementById('cecSalesAiBody125');
     if(!body) return;
 
     const stock = Number(product.stock || 0);
@@ -1956,7 +1977,7 @@ function notifyCartAddedV110(){
         <div><b>Estoque:</b><span>${stock > 0 ? esc(stock) : 'sob consulta'}</span></div>
         <button type="button" data-cec-ai-add="${esc(product.id)}" data-cec-ai-qty="1">Adicionar 1 ao carrinho</button>
       </article>
-      <div class="cec-sales-msg bot">Para orçamento, informe a quantidade. Exemplo: “10 unidades”.</div>
+      <div class="cec-sales-msg bot">Para orçamento, informe a quantidade. Para buscar outro produto, digite o novo código/modelo.</div>
     `;
 
     body.appendChild(wrap);
@@ -1964,8 +1985,12 @@ function notifyCartAddedV110(){
   }
 
   function showQuote(product, qty){
-    const body = document.getElementById('cecSalesAiBody122');
+    const body = document.getElementById('cecSalesAiBody125');
     if(!body || !product || !qty) return;
+
+    pendingProduct = product;
+    lastQuotedProduct = product;
+    pendingAmbiguous = null;
 
     const total = Number(product.price || 0) * qty;
     const stock = Number(product.stock || 0);
@@ -1983,18 +2008,52 @@ function notifyCartAddedV110(){
         <div><b>Estoque:</b><span>${stock > 0 ? esc(stock) : 'sob consulta'}</span></div>
         <button type="button" data-cec-ai-add="${esc(product.id)}" data-cec-ai-qty="${esc(qty)}">Adicionar ${qty} ao carrinho</button>
       </article>
-      <div class="cec-sales-msg bot">Você pode adicionar ao carrinho ou chamar a C&C no WhatsApp para confirmar disponibilidade.</div>
+      <div class="cec-sales-msg bot">Você pode adicionar ao carrinho, informar outra quantidade ou digitar outro código/modelo para nova busca.</div>
     `;
 
     body.appendChild(wrap);
     body.scrollTop = body.scrollHeight;
   }
 
-  function clearPending(){
-    pendingProducts = [];
-    pendingQty = 0;
-    pendingProduct = null;
-    pendingMode = 'product';
+  function askAmbiguousCode(text, type){
+    const previous = type === 'quote' ? lastQuotedProduct : pendingProduct;
+    pendingAmbiguous = { typed: text, previousProduct: previous, questionType: type || 'product' };
+
+    if(type === 'quote' && previous){
+      addText(`Você quer refazer o orçamento de ${previous.name} com ${text} unidades ou buscar um novo produto/código ${text}?\n\nResponda: “orçamento” ou “novo produto”.`, 'bot');
+      return;
+    }
+
+    addText(`Você quer buscar um novo produto com o código ${text} ou usar ${text} como quantidade para o produto anterior?\n\nResponda: “novo produto” ou “quantidade”.`, 'bot');
+  }
+
+  function handleAmbiguousReply(msg){
+    if(!pendingAmbiguous) return false;
+
+    const q = clean(msg);
+    const typed = pendingAmbiguous.typed;
+    const previous = pendingAmbiguous.previousProduct;
+
+    if(/\b(novo|buscar|busca|produto|modelo|codigo|código)\b/.test(q)){
+      pendingAmbiguous = null;
+      pendingProduct = null;
+      runProductFlow(typed);
+      return true;
+    }
+
+    if(/\b(quantidade|unidades|unidade|orcamento|orçamento|orcamento|mesmo|anterior|refazer|usar|sim)\b/.test(q)){
+      pendingAmbiguous = null;
+      const qty = Number(String(typed).replace(/\D/g, ''));
+      if(previous && qty > 0){
+        showQuote(previous, qty);
+      }else{
+        addText('Não consegui identificar a quantidade. Informe novamente com “10 unidades”, por exemplo.', 'bot');
+      }
+      return true;
+    }
+
+    addText('Responda “novo produto” para buscar outro código, ou “quantidade” para usar esse número no produto anterior.', 'bot');
+    return true;
   }
 
   function answerService(text){
@@ -2043,6 +2102,126 @@ function notifyCartAddedV110(){
     return false;
   }
 
+  function runProductFlow(msg){
+    const q = clean(msg);
+
+    // Responder pelo número da opção.
+    if(pendingProducts.length && /^\d{1,2}$/.test(q)){
+      const idx = Number(q) - 1;
+      if(idx >= 0 && idx < pendingProducts.length){
+        const selected = pendingProducts[idx];
+        const qtySaved = pendingQty || 0;
+        const modeSaved = pendingMode;
+        pendingProducts = [];
+        pendingQty = 0;
+        pendingMode = 'product';
+
+        if(qtySaved && modeSaved === 'quote') showQuote(selected, qtySaved);
+        else showProduct(selected);
+        return;
+      }
+    }
+
+    const qty = qtyFrom(msg);
+    const codes = extractCodes(msg);
+    const variant = requestedVariant(msg);
+
+    // Responder só cor/modelo depois de uma lista.
+    if(pendingProducts.length && variant && !codes.length){
+      const selected = filterByVariant(pendingProducts, msg);
+      if(selected.length === 1){
+        const qtySaved = pendingQty || 0;
+        const modeSaved = pendingMode;
+        pendingProducts = [];
+        pendingQty = 0;
+        pendingMode = 'product';
+
+        if(qtySaved && modeSaved === 'quote') showQuote(selected[0], qtySaved);
+        else showProduct(selected[0]);
+        return;
+      }
+    }
+
+    // Responder só tipo depois de uma lista.
+    if(pendingProducts.length && !codes.length){
+      let selected = [];
+      if(/\btoner\b/.test(q)) selected = pendingProducts.filter(p => kindProduct(p) === 'toner');
+      if(/\bfotocondutor\b|\bcilindro\b/.test(q)) selected = pendingProducts.filter(p => kindProduct(p) === 'fotocondutor');
+      if(selected.length === 1){
+        const qtySaved = pendingQty || 0;
+        const modeSaved = pendingMode;
+        pendingProducts = [];
+        pendingQty = 0;
+        pendingMode = 'product';
+
+        if(qtySaved && modeSaved === 'quote') showQuote(selected[0], qtySaved);
+        else showProduct(selected[0]);
+        return;
+      }
+    }
+
+    // Responder TN1060/DR1060 depois de lista.
+    if(pendingProducts.length && codes.length){
+      let selected = searchCatalog(msg);
+      if(selected.length === 1){
+        const qtySaved = pendingQty || qty || 0;
+        const modeSaved = pendingMode;
+        pendingProducts = [];
+        pendingQty = 0;
+        pendingMode = 'product';
+
+        if(qtySaved && modeSaved === 'quote') showQuote(selected[0], qtySaved);
+        else showProduct(selected[0]);
+        return;
+      }
+    }
+
+    // Responder só quantidade depois de produto único.
+    if(pendingProduct && qty && !codes.length && !variant){
+      const selected = pendingProduct;
+      showQuote(selected, qty);
+      return;
+    }
+
+    let found = searchCatalog(msg);
+
+    if(found.length && variant){
+      const filtered = filterByVariant(found, msg);
+      if(filtered.length) found = filtered;
+    }
+
+    const quoteMode = wantsQuote(msg) || qty > 0;
+
+    if(found.length > 1 && codes.length && !variant){
+      pendingProducts = found;
+      pendingQty = qty || 0;
+      pendingProduct = null;
+      pendingMode = quoteMode ? 'quote' : 'product';
+      showChoices(found, msg, pendingMode);
+      return;
+    }
+
+    if(found.length === 1){
+      if(quoteMode && qty) showQuote(found[0], qty);
+      else showProduct(found[0]);
+      return;
+    }
+
+    if(found.length > 1){
+      pendingProducts = found;
+      pendingQty = qty || 0;
+      pendingMode = quoteMode ? 'quote' : 'product';
+      showChoices(found, msg, pendingMode);
+      return;
+    }
+
+    if(wantsQuote(msg)){
+      addText('Claro. Para montar o orçamento, me informe modelo/código do produto e quantidade. Exemplo: “10 unidades do 954 preto”, “10 954” ou “2 TN1060”.', 'bot');
+    }else{
+      addText('Digite o código/modelo do produto. Para orçamento, envie também a quantidade. Exemplo: “954 preto”, “10 954” ou “2 TN1060”.', 'bot');
+    }
+  }
+
   function send(text){
     const msg = String(text || '').trim();
     if(!msg) return;
@@ -2055,120 +2234,29 @@ function notifyCartAddedV110(){
     addText(msg, 'user');
 
     setTimeout(() => {
+      if(handleAmbiguousReply(msg)) return;
       if(answerService(msg)) return;
 
-      const q = clean(msg);
-
-      // Responder pelo número da opção.
-      if(pendingProducts.length && /^\d{1,2}$/.test(q)){
-        const idx = Number(q) - 1;
-        if(idx >= 0 && idx < pendingProducts.length){
-          const selected = pendingProducts[idx];
-          const qtySaved = pendingQty || 0;
-          const modeSaved = pendingMode;
-          clearPending();
-
-          if(qtySaved && modeSaved === 'quote') showQuote(selected, qtySaved);
-          else showProduct(selected);
-          return;
-        }
-      }
-
-      const qty = qtyFrom(msg);
-      const codes = extractCodes(msg);
-      const variant = requestedVariant(msg);
-
-      // Responder só cor/modelo depois de uma lista.
-      if(pendingProducts.length && variant && !codes.length){
-        const selected = filterByVariant(pendingProducts, msg);
-        if(selected.length === 1){
-          const qtySaved = pendingQty || 0;
-          const modeSaved = pendingMode;
-          clearPending();
-          if(qtySaved && modeSaved === 'quote') showQuote(selected[0], qtySaved);
-          else showProduct(selected[0]);
-          return;
-        }
-      }
-
-      // Responder só tipo depois de uma lista.
-      if(pendingProducts.length && !codes.length){
-        let selected = [];
-        if(/\btoner\b/.test(q)) selected = pendingProducts.filter(p => kindProduct(p) === 'toner');
-        if(/\bfotocondutor\b|\bcilindro\b/.test(q)) selected = pendingProducts.filter(p => kindProduct(p) === 'fotocondutor');
-        if(selected.length === 1){
-          const qtySaved = pendingQty || 0;
-          const modeSaved = pendingMode;
-          clearPending();
-          if(qtySaved && modeSaved === 'quote') showQuote(selected[0], qtySaved);
-          else showProduct(selected[0]);
-          return;
-        }
-      }
-
-      // Responder TN1060/DR1060 depois de lista.
-      if(pendingProducts.length && codes.length){
-        let selected = searchCatalog(msg);
-        if(selected.length === 1){
-          const qtySaved = pendingQty || qty || 0;
-          const modeSaved = pendingMode;
-          clearPending();
-          if(qtySaved && modeSaved === 'quote') showQuote(selected[0], qtySaved);
-          else showProduct(selected[0]);
-          return;
-        }
-      }
-
-      // Responder só quantidade depois de produto único.
-      if(pendingProduct && qty && !codes.length && !variant){
-        const selected = pendingProduct;
-        pendingProduct = null;
-        showQuote(selected, qty);
+      // Depois de um orçamento pronto, se o cliente digitar só número, pergunta:
+      // refazer orçamento do mesmo produto ou buscar novo produto/código.
+      if(lastQuotedProduct && /^\d{1,5}$/.test(clean(msg)) && !pendingProducts.length){
+        askAmbiguousCode(msg, 'quote');
         return;
       }
 
-      let found = searchCatalog(msg);
-
-      if(found.length && variant){
-        const filtered = filterByVariant(found, msg);
-        if(filtered.length) found = filtered;
-      }
-
-      const quoteMode = wantsQuote(msg) || qty > 0;
-
-      if(found.length > 1 && codes.length && !variant){
-        pendingProducts = found;
-        pendingQty = qty || 0;
-        pendingProduct = null;
-        pendingMode = quoteMode ? 'quote' : 'product';
-        showChoices(found, msg, pendingMode);
+      // Se existe produto anterior e o usuário digitou só um código/modelo numérico grande,
+      // pergunta antes de decidir se é nova busca ou quantidade.
+      if(pendingProduct && looksLikeCodeOnly(msg) && !pendingProducts.length){
+        askAmbiguousCode(msg, 'product');
         return;
       }
 
-      if(found.length === 1){
-        if(quoteMode && qty) showQuote(found[0], qty);
-        else showProduct(found[0]);
-        return;
-      }
-
-      if(found.length > 1){
-        pendingProducts = found;
-        pendingQty = qty || 0;
-        pendingMode = quoteMode ? 'quote' : 'product';
-        showChoices(found, msg, pendingMode);
-        return;
-      }
-
-      if(wantsQuote(msg)){
-        addText('Claro. Para montar o orçamento, me informe modelo/código do produto e quantidade. Exemplo: “10 unidades do 954 preto”, “10 954” ou “2 TN1060”.', 'bot');
-      }else{
-        addText('Digite o código/modelo do produto. Para orçamento, envie também a quantidade. Exemplo: “954 preto”, “10 954” ou “2 TN1060”.', 'bot');
-      }
+      runProductFlow(msg);
     }, 150);
   }
 
   function openWhatsapp(){
-    const body = document.getElementById('cecSalesAiBody122');
+    const body = document.getElementById('cecSalesAiBody125');
     const history = body ? Array.from(body.querySelectorAll('.cec-sales-msg')).slice(-10).map(el => {
       return (el.classList.contains('user') ? 'Cliente: ' : 'C&C: ') + el.textContent;
     }).join('\n') : '';
@@ -2177,7 +2265,7 @@ function notifyCartAddedV110(){
   }
 
   function removeOldBots(){
-    ['cecChatWidget','cecSmartBotV106','cecBotV106','cecAssistV107','cecAssistantV108','cecSalesAiV109','cecSalesAiV111','cecSalesAiV112','cecSalesAiV113','cecSalesAiV114','cecSalesAiV115','cecSalesAiV118','cecSalesAiV120','cecSalesAiV121','cecSalesAiV122'].forEach(id => {
+    ['cecChatWidget','cecSmartBotV106','cecBotV106','cecAssistV107','cecAssistantV108','cecSalesAiV109','cecSalesAiV111','cecSalesAiV112','cecSalesAiV113','cecSalesAiV114','cecSalesAiV115','cecSalesAiV118','cecSalesAiV120','cecSalesAiV121','cecSalesAiV122','cecSalesAiV123','cecSalesAiV124','cecSalesAiV125'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.remove();
     });
@@ -2192,55 +2280,55 @@ function notifyCartAddedV110(){
     root.id = ROOT_ID;
     root.className = 'cec-sales-ai';
     root.innerHTML = `
-      <button class="cec-sales-open" id="cecSalesAiOpen122" type="button" aria-label="Fale com a C&C">
+      <button class="cec-sales-open" id="cecSalesAiOpen125" type="button" aria-label="Fale com a C&C">
         <span>💬</span>
         <strong>Fale com a C&C</strong>
       </button>
 
-      <section class="cec-sales-panel hidden" id="cecSalesAiPanel122">
+      <section class="cec-sales-panel hidden" id="cecSalesAiPanel125">
         <header>
           <div>
             <strong>Fale com a C&C</strong>
           </div>
-          <button type="button" id="cecSalesAiClose122" aria-label="Fechar">×</button>
+          <button type="button" id="cecSalesAiClose125" aria-label="Fechar">×</button>
         </header>
 
-        <main id="cecSalesAiBody122" class="cec-sales-body"></main>
+        <main id="cecSalesAiBody125" class="cec-sales-body"></main>
 
-        <form id="cecSalesAiForm122" class="cec-sales-form">
-          <input id="cecSalesAiInput122" placeholder="Ex.: 954 preto, entrega, acompanhar pedido..." autocomplete="off">
+        <form id="cecSalesAiForm125" class="cec-sales-form">
+          <input id="cecSalesAiInput125" placeholder="Ex.: 954 preto, entrega, acompanhar pedido..." autocomplete="off">
           <button type="submit">Enviar</button>
         </form>
 
-        <button class="cec-sales-wpp" id="cecSalesAiWpp122" type="button">Chamar no WhatsApp</button>
+        <button class="cec-sales-wpp" id="cecSalesAiWpp125" type="button">Chamar no WhatsApp</button>
       </section>
     `;
 
     document.body.appendChild(root);
 
-    const open = document.getElementById('cecSalesAiOpen122');
-    const panel = document.getElementById('cecSalesAiPanel122');
+    const open = document.getElementById('cecSalesAiOpen125');
+    const panel = document.getElementById('cecSalesAiPanel125');
 
     open.addEventListener('click', () => {
       panel.classList.remove('hidden');
       open.classList.add('hidden');
-      const body = document.getElementById('cecSalesAiBody122');
+      const body = document.getElementById('cecSalesAiBody125');
       if(!body.dataset.started){
         body.dataset.started = '1';
         addText('Olá! Posso ajudar com produtos, orçamento, entrega, pagamento, trocas/devoluções ou acompanhar pedido.', 'bot');
       }
-      setTimeout(() => document.getElementById('cecSalesAiInput122')?.focus(), 80);
+      setTimeout(() => document.getElementById('cecSalesAiInput125')?.focus(), 80);
     });
 
-    document.getElementById('cecSalesAiClose122').addEventListener('click', () => {
+    document.getElementById('cecSalesAiClose125').addEventListener('click', () => {
       panel.classList.add('hidden');
       open.classList.remove('hidden');
     });
 
-    document.getElementById('cecSalesAiForm122').addEventListener('submit', e => {
+    document.getElementById('cecSalesAiForm125').addEventListener('submit', e => {
       e.preventDefault();
       e.stopPropagation();
-      const input = document.getElementById('cecSalesAiInput122');
+      const input = document.getElementById('cecSalesAiInput125');
       send(input.value);
       input.value = '';
     });
@@ -2264,7 +2352,7 @@ function notifyCartAddedV110(){
       }
     });
 
-    document.getElementById('cecSalesAiWpp122').addEventListener('click', openWhatsapp);
+    document.getElementById('cecSalesAiWpp125').addEventListener('click', openWhatsapp);
   }
 
   if(document.readyState === 'loading'){

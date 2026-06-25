@@ -1,0 +1,15 @@
+VERSÃO 124 - PERGUNTA NOVO PRODUTO OU QUANTIDADE
+
+Corrigido:
+- Se já havia um produto selecionado e o cliente digita um número/modelo grande como 954, a IA pergunta:
+  "Você quer buscar um novo produto com o código 954 ou usar 954 como quantidade para o produto anterior?"
+- Se responder "novo produto", a IA faz nova busca do código.
+- Se responder "quantidade", a IA usa como quantidade do produto anterior.
+- Número curto como 10, depois de produto selecionado, continua sendo quantidade.
+- Texto da IA fica preto/visível.
+- HTML força app.js?v=124 e styles.css?v=124 para não pegar cache antigo.
+
+Teste:
+1060
+954
+novo produto

@@ -1,0 +1,12 @@
+VERSÃO 123 - NÚMERO COMO MODELO E TEXTO DA IA PRETO
+
+Corrigido:
+- Depois de encontrar um produto, se o cliente digitar "954", a IA trata como novo modelo/código, não como 954 unidades.
+- Número curto como "10" depois de um produto ainda funciona como quantidade.
+- Exemplo:
+  1060 -> mostra produto
+  10 1060 -> orçamento do 1060
+  954 -> nova busca do 954, não orçamento do 1060 com 954 unidades
+- Texto da resposta da IA agora fica preto/visível.
+- Texto digitado no campo continua preto.
+- HTML força assets/app.js?v=123 e assets/styles.css?v=123 para tirar cache antigo.

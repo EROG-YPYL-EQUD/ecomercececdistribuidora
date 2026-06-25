@@ -3761,7 +3761,7 @@ td{
   }
 }
 
-/* V121 - Atendimento C&C limpo e atendimento geral */
+/* V125 - Atendimento C&C pergunta refazer orçamento */
 .cec-sales-ai{
   position:fixed;
   right:18px;
@@ -3786,7 +3786,7 @@ td{
 .cec-sales-panel{
   width:min(420px, calc(100vw - 28px));
   background:#fff;
-  color:var(--text);
+  color:#111 !important;
   border:1px solid var(--line);
   border-radius:22px;
   box-shadow:0 22px 55px rgba(0,0,0,.30);
@@ -3798,19 +3798,20 @@ td{
   align-items:center;
   gap:12px;
   background:linear-gradient(135deg,#0b2a23,#17684f);
-  color:#fff;
+  color:#fff !important;
   padding:14px 15px;
 }
 .cec-sales-panel header strong{
   display:block;
   font-size:16px;
   margin:0 !important;
+  color:#fff !important;
 }
 .cec-sales-panel header small{display:none !important}
 .cec-sales-panel header button{
   border:0;
   background:rgba(255,255,255,.12);
-  color:#fff;
+  color:#fff !important;
   width:32px;
   height:32px;
   border-radius:50%;
@@ -3835,8 +3836,17 @@ td{
   line-height:1.35;
   white-space:pre-wrap;
 }
-.cec-sales-msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--line)}
-.cec-sales-msg.user{align-self:flex-end;background:var(--brand);color:#fff}
+.cec-sales-msg.bot{
+  align-self:flex-start;
+  background:#fff;
+  border:1px solid var(--line);
+  color:#111 !important;
+}
+.cec-sales-msg.user{
+  align-self:flex-end;
+  background:var(--brand);
+  color:#fff !important;
+}
 .cec-sales-results{display:flex;flex-direction:column;gap:9px}
 .cec-sales-product,.cec-sales-choice{
   background:#fff;
@@ -3845,23 +3855,24 @@ td{
   padding:11px;
   display:grid;
   gap:6px;
+  color:#111 !important;
 }
-.cec-sales-product strong,.cec-sales-choice strong{color:var(--brand);font-size:14px;line-height:1.25}
-.cec-sales-product small,.cec-sales-product em,.cec-sales-product span,.cec-sales-choice small{color:var(--muted);font-size:12px;font-style:normal}
+.cec-sales-product strong,.cec-sales-choice strong{color:#111 !important;font-size:14px;line-height:1.25}
+.cec-sales-product small,.cec-sales-product em,.cec-sales-product span,.cec-sales-choice small{color:#333 !important;font-size:12px;font-style:normal}
 .cec-sales-product div{display:flex;justify-content:space-between;gap:10px;align-items:center}
-.cec-sales-product b{color:var(--text);font-size:14px}
+.cec-sales-product b{color:#111 !important;font-size:14px}
 .cec-sales-product button{
   border:0;
   border-radius:999px;
   background:var(--brand);
-  color:#fff;
+  color:#fff !important;
   font-weight:900;
   padding:9px 12px;
   cursor:pointer;
 }
 .cec-sales-form{display:flex;gap:8px;padding:10px 12px;background:#fff}
 .cec-sales-form input,
-#cecSalesAiInput121{
+#cecSalesAiInput125{
   flex:1;
   min-width:0;
   border:1px solid var(--line);
@@ -3873,11 +3884,19 @@ td{
   caret-color:#111 !important;
 }
 .cec-sales-form input::placeholder,
-#cecSalesAiInput121::placeholder{
+#cecSalesAiInput125::placeholder{
   color:#777 !important;
   opacity:1 !important;
 }
-.cec-sales-form button,.cec-sales-wpp{border:0;border-radius:999px;background:var(--brand);color:#fff;font-weight:900;padding:10px 13px;cursor:pointer}
+.cec-sales-form button,.cec-sales-wpp{
+  border:0;
+  border-radius:999px;
+  background:var(--brand);
+  color:#fff !important;
+  font-weight:900;
+  padding:10px 13px;
+  cursor:pointer;
+}
 .cec-sales-wpp{width:calc(100% - 24px);margin:0 12px 12px;background:#25d366}
 @media(max-width:520px){
   .cec-sales-ai{right:12px;bottom:12px}
@@ -3886,31 +3905,21 @@ td{
 }
 
 
-/* V122 - Força chat novo e oculta subtítulo antigo */
-.cec-sales-panel header small,
-.cec-bot header small,
-.cec-assistant header small,
-.cec-chat-widget header small{
-  display:none !important;
-}
-.cec-sales-form input,
-#cecSalesAiInput122,
-#cecSalesAiInput121,
-#cecSalesAiInput120,
-#cecSalesAiInput118,
-#cecSalesAiInput116,
-#cecSalesAiInput115{
+/* V125 - reforço visual texto preto */
+.cec-sales-msg.bot,
+.cec-sales-product,
+.cec-sales-choice,
+.cec-sales-product strong,
+.cec-sales-choice strong,
+.cec-sales-product b,
+.cec-sales-product span,
+.cec-sales-product small,
+.cec-sales-choice small{
   color:#111 !important;
-  background:#fff !important;
-  caret-color:#111 !important;
 }
-.cec-sales-form input::placeholder,
-#cecSalesAiInput122::placeholder,
-#cecSalesAiInput121::placeholder,
-#cecSalesAiInput120::placeholder,
-#cecSalesAiInput118::placeholder,
-#cecSalesAiInput116::placeholder,
-#cecSalesAiInput115::placeholder{
-  color:#777 !important;
-  opacity:1 !important;
+.cec-sales-msg.user,
+.cec-sales-product button,
+.cec-sales-form button,
+.cec-sales-wpp{
+  color:#fff !important;
 }

@@ -1,0 +1,16 @@
+VERSÃO 125 - PERGUNTA REFAZER ORÇAMENTO OU NOVO PRODUTO
+
+Correção:
+- Depois de um orçamento pronto, se o cliente digitar só um número, a IA não decide sozinha.
+- Exemplo:
+  1060
+  10 unidades
+  -> orçamento de 10 unidades do 1060
+  Cliente digita: 15
+  IA pergunta:
+  "Você quer refazer o orçamento do mesmo produto com 15 unidades ou buscar um novo produto/código 15?"
+- Se responder "orçamento", refaz o orçamento do mesmo produto.
+- Se responder "novo produto", faz nova busca.
+- Continua perguntando quando o número parece código/modelo grande, exemplo 954.
+- Texto da IA permanece preto/visível.
+- HTML força app.js?v=125 e styles.css?v=125.
