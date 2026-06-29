@@ -3998,3 +3998,25 @@ td{
   background:#fff !important;
   caret-color:#111 !important;
 }
+
+
+/* V130 - indicador visual da categoria preservado pelo link */
+.category-btn.active,
+.cat-btn.active,
+.filter-btn.active,
+[data-category].active,
+[data-categoria].active,
+[data-filter].active{
+  outline:2px solid rgba(217,173,99,.45);
+}
+
+
+/* V131 - URL limpa da categoria */
+.category-btn.active,
+.cat-btn.active,
+.filter-btn.active,
+[data-category].active,
+[data-categoria].active,
+[data-filter].active{
+  outline:2px solid rgba(217,173,99,.45);
+}

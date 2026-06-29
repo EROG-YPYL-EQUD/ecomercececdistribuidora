@@ -2454,3 +2454,184 @@ function notifyCartAddedV110(){
     init();
   }
 })();
+
+
+/* V131 - Link da loja sem .html acompanha categoria */
+(function(){
+  if(window.__CEC_CATEGORIA_URL_V131__) return;
+  window.__CEC_CATEGORIA_URL_V131__ = true;
+
+  function cleanCategory(v){
+    return String(v || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  function normalizeCategory(v){
+    const s = cleanCategory(v);
+    if(!s || s === 'todos' || s === 'todas' || s === 'all') return 'todos';
+    if(s.includes('toner')) return 'toner';
+    if(s.includes('cartucho')) return 'cartucho';
+    if(s.includes('cilindro') || s.includes('fotocondutor') || s.includes('drum')) return 'fotocondutor';
+    if(s.includes('tinta')) return 'tinta';
+    if(s.includes('peca') || s.includes('pecas')) return 'pecas';
+    if(s.includes('suprimento') || s.includes('suprimentos')) return 'suprimentos';
+    return s;
+  }
+
+  function labelFromCategory(cat){
+    const c = normalizeCategory(cat);
+    const labels = {
+      todos: 'Todos',
+      toner: 'Toner',
+      cartucho: 'Cartucho',
+      fotocondutor: 'Fotocondutor',
+      tinta: 'Tinta',
+      pecas: 'Peças',
+      suprimentos: 'Suprimentos'
+    };
+    return labels[c] || String(cat || '').replace(/-/g,' ');
+  }
+
+  function getCategoryFromUrl(){
+    const url = new URL(location.href);
+    let c = url.searchParams.get('categoria') || url.searchParams.get('cat') || '';
+
+    if(!c && location.hash){
+      const h = location.hash.replace(/^#/, '');
+      if(h.startsWith('categoria=')) c = h.split('=')[1] || '';
+      else if(h.startsWith('cat=')) c = h.split('=')[1] || '';
+      else if(h) c = h;
+    }
+
+    return normalizeCategory(decodeURIComponent(c || 'todos'));
+  }
+
+  function setCategoryInUrl(cat){
+    const normalized = normalizeCategory(cat);
+    const url = new URL(location.href);
+
+    if(normalized === 'todos'){
+      url.searchParams.delete('categoria');
+    }else{
+      url.searchParams.set('categoria', normalized);
+    }
+
+    let cleanPath = url.pathname;
+    if(cleanPath.endsWith('/loja.html')) cleanPath = cleanPath.replace('/loja.html', '/loja');
+    if(cleanPath === '/loja.html') cleanPath = '/loja';
+    const next = cleanPath + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '') + url.hash;
+    history.pushState({categoria: normalized}, '', next);
+    document.title = normalized === 'todos'
+      ? 'Loja | C&C Distribuidora'
+      : labelFromCategory(normalized) + ' | Loja C&C Distribuidora';
+  }
+
+  function inferCategoryFromElement(el){
+    if(!el) return '';
+
+    const attrs = [
+      el.dataset.category,
+      el.dataset.categoria,
+      el.dataset.filter,
+      el.dataset.cat,
+      el.getAttribute('data-category'),
+      el.getAttribute('data-categoria'),
+      el.getAttribute('data-filter'),
+      el.getAttribute('data-cat'),
+      el.getAttribute('href'),
+      el.textContent
+    ].filter(Boolean);
+
+    let raw = attrs.join(' ');
+    raw = raw.replace(/^#/, '').replace(/^\.?category-/, '').replace(/^\.?cat-/, '');
+
+    if(raw.includes('categoria=')){
+      try{
+        const u = new URL(raw, location.origin);
+        raw = u.searchParams.get('categoria') || raw;
+      }catch(e){}
+    }
+
+    return normalizeCategory(raw);
+  }
+
+  function clickCategory(cat){
+    const normalized = normalizeCategory(cat);
+    const possible = Array.from(document.querySelectorAll('button,a,[data-category],[data-categoria],[data-filter],[data-cat],.category-btn,.cat-btn,.filter-btn'));
+    const target = possible.find(el => normalizeCategory(inferCategoryFromElement(el)) === normalized);
+    if(target){
+      target.click();
+      return true;
+    }
+    return false;
+  }
+
+  function applyCategoryFromUrl(){
+    if(!location.pathname.includes('loja')) return;
+
+    const cat = getCategoryFromUrl();
+    if(cat === 'todos') return;
+
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries++;
+      if(clickCategory(cat) || tries > 20){
+        clearInterval(timer);
+      }
+    }, 250);
+  }
+
+  document.addEventListener('click', function(e){
+    if(!location.pathname.includes('loja')) return;
+
+    const el = e.target.closest('button,a,[data-category],[data-categoria],[data-filter],[data-cat],.category-btn,.cat-btn,.filter-btn');
+    if(!el) return;
+
+    const cat = inferCategoryFromElement(el);
+    if(!cat) return;
+
+    const text = String(el.textContent || '').toLowerCase();
+    const href = String(el.getAttribute('href') || '');
+
+    const looksCategory =
+      el.dataset.category || el.dataset.categoria || el.dataset.filter || el.dataset.cat ||
+      href.includes('categoria=') ||
+      /todos|toner|cartucho|fotocondutor|cilindro|tinta|suprimento|pecas|peças/.test(text);
+
+    if(!looksCategory) return;
+
+    setTimeout(() => setCategoryInUrl(cat), 20);
+  }, true);
+
+  window.addEventListener('popstate', applyCategoryFromUrl);
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', applyCategoryFromUrl);
+  }else{
+    applyCategoryFromUrl();
+  }
+})();
+
+
+/* V131 - Remove .html das categorias da loja */
+(function(){
+  if(window.__CEC_REMOVE_HTML_LOJA_V131__) return;
+  window.__CEC_REMOVE_HTML_LOJA_V131__ = true;
+
+  function cleanLojaUrl(){
+    if(location.pathname.endsWith('/loja.html')){
+      const clean = location.pathname.replace('/loja.html', '/loja') + location.search + location.hash;
+      history.replaceState(history.state || {}, '', clean);
+    }
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', cleanLojaUrl);
+  }else{
+    cleanLojaUrl();
+  }
+})();
