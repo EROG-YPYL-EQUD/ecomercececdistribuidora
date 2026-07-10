@@ -991,10 +991,44 @@ function renderPixBlock({amount, txid, qrId, amountId, payloadId, keyId}){
 async function copyTextValue(text, label='Copiado'){
   try{ await navigator.clipboard.writeText(text); toast(label); }catch(e){ toast('Não foi possível copiar.'); }
 }
-function makeCode(){
-  const last = Number(localStorage.getItem('cec_last_order_number') || '0') + 1;
-  localStorage.setItem('cec_last_order_number', String(last));
-  return String(last).padStart(6, '0');
+function orderNumberFromCode(code){
+  const digits = String(code || '').replace(/\D/g, '');
+  if(!digits) return 0;
+  const n = Number(digits);
+  return Number.isFinite(n) ? n : 0;
+}
+async function findHighestExistingOrderNumber(){
+  let max = 0;
+  const scanOrder = order => {
+    if(!order) return;
+    max = Math.max(max, orderNumberFromCode(order.code || order.numeroPedido || order.id));
+  };
+
+  if(!db()) return max;
+
+  try{
+    const publicSnap = await db().collection(FB_COLLECTION).doc('pedidos_por_codigo').collection(FB_ITEMS_SUBCOLLECTION).get();
+    publicSnap.forEach(doc => scanOrder({...doc.data(), id:doc.id}));
+  }catch(e){
+    console.warn('Não foi possível consultar pedidos públicos para numeração:', e);
+  }
+
+  try{
+    const legacySnap = await fbDoc('pedidos')?.get();
+    const legacyItems = legacySnap?.exists ? ((legacySnap.data() || {}).itens || []) : [];
+    if(Array.isArray(legacyItems)) legacyItems.forEach(scanOrder);
+  }catch(e){
+    console.warn('Não foi possível consultar pedidos antigos para numeração:', e);
+  }
+
+  try{
+    const fullSnap = await fbItemsCollection(FB_ORDERS_DOC)?.get();
+    fullSnap?.forEach(doc => scanOrder({...doc.data(), id:doc.id}));
+  }catch(e){
+    // Normal: as regras podem impedir leitura pública de pedidos completos.
+  }
+
+  return max;
 }
 async function getNextOrderCode(){
   if(db() && typeof db().runTransaction === 'function'){
@@ -1004,19 +1038,22 @@ async function getNextOrderCode(){
         const next = await db().runTransaction(async transaction => {
           const snap = await transaction.get(ref);
           const current = snap.exists ? Number((snap.data() || {}).ultimoNumero || 0) : 0;
-          const value = Math.max(0, current) + 1;
+          const existingMax = current > 0 ? current : await findHighestExistingOrderNumber();
+          const value = Math.max(0, existingMax) + 1;
           transaction.set(ref, {ultimoNumero:value, updatedAt:serverTimestamp(), updatedAtMs:Date.now()}, {merge:true});
           return value;
         });
-        localStorage.setItem('cec_last_order_number', String(next));
         return String(next).padStart(6, '0');
       }catch(e){
         console.error('Contador de pedidos Firebase:', e);
-        toast('Não consegui gerar número online. Usando número local provisório.');
       }
     }
   }
-  return makeCode();
+
+  // Fallback sem localStorage: calcula pelo que já existe no banco.
+  // Assim pedido de teste apagado não força o próximo número a continuar #000003 no mesmo navegador.
+  const highest = await findHighestExistingOrderNumber();
+  return String(Math.max(0, highest) + 1).padStart(6, '0');
 }
 function openCheckout(){
   const items = cartProducts();
