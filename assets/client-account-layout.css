@@ -1,0 +1,101 @@
+/* Central da Conta — layout unificado baseado nas referências enviadas */
+#clientPage.client-is-logged .client-shell{max-width:1120px;width:100%}
+#clientPage.client-is-logged .client-brandline{display:none}
+#clientPage.client-is-logged .client-page{padding-top:26px}
+#clientPage .client-account-area{width:100%}
+#clientPage .client-account-bar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 18px;padding:18px 22px;border:1px solid rgba(214,165,78,.28);border-radius:14px;background:#111c2d}
+#clientPage .client-account-bar strong{font-size:1.08rem}
+#clientPage .client-account-bar span{color:#b6c0ce}
+#clientPage .client-account-bar .btn{min-width:92px}
+
+#clientPage .client-tabs{display:flex;align-items:flex-end;gap:6px;margin:0;padding:0 12px;overflow-x:auto;border-bottom:1px solid rgba(214,165,78,.28);scrollbar-width:thin}
+#clientPage .client-tab{flex:0 0 auto;margin-bottom:-1px;padding:12px 18px;border:1px solid rgba(214,165,78,.28);border-bottom-color:transparent;border-radius:8px 8px 0 0;background:#172235;color:#dfe5ed;font-weight:800;line-height:1;cursor:pointer}
+#clientPage .client-tab:hover{background:#1d2a3e;color:#fff}
+#clientPage .client-tab.is-active{background:#d9a44d;color:#121212;border-color:#e9bc70;border-bottom-color:#d9a44d}
+#clientPage .client-tab-panels{min-height:520px;padding:30px;border:1px solid rgba(214,165,78,.28);border-top:0;border-radius:0 0 16px 16px;background:#0d1727}
+#clientPage .client-tab-panel[hidden]{display:none!important}
+#clientPage .client-tab-panel.is-active{display:block}
+
+#clientPage .client-welcome{padding:2px 0 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+#clientPage .client-welcome h1{margin:5px 0 7px;font-size:clamp(1.7rem,3vw,2.35rem)}
+#clientPage .client-welcome p{margin:0;color:#b7c0cc}
+#clientPage .client-eyebrow{color:#e1ad55;font-size:.74rem;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+
+#clientPage .client-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:24px 0}
+#clientPage .client-summary-card{display:flex;align-items:center;gap:14px;min-height:104px;padding:18px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#121f31;color:#fff;text-align:left;cursor:pointer;transition:.18s ease}
+#clientPage .client-summary-card:hover{transform:translateY(-2px);border-color:rgba(225,173,85,.58);background:#17263a}
+#clientPage .client-summary-icon{display:grid;place-items:center;width:44px;height:44px;flex:0 0 44px;border-radius:50%;background:rgba(225,173,85,.14);font-size:1.25rem}
+#clientPage .client-summary-card span:last-child{display:grid;gap:5px;min-width:0}
+#clientPage .client-summary-card small{color:#aeb8c6}
+#clientPage .client-summary-card strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:1rem}
+
+#clientPage .client-dashboard-sections{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+#clientPage .client-info-card{padding:0;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#111d2e;overflow:hidden}
+#clientPage .client-info-card-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+#clientPage .client-info-card-head h2{margin:0;font-size:1.08rem}
+#clientPage .client-info-card-head button{border:0;background:none;color:#e7b85e;font-weight:800;cursor:pointer}
+#clientPage .client-info-content{min-height:118px;padding:18px;color:#c8d0db;line-height:1.65}
+
+#clientPage .client-tab-panel .card{margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+#clientPage .client-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:18px;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,.09)}
+#clientPage .client-section-head h2{margin:4px 0 6px;font-size:1.65rem}
+#clientPage .client-section-head p{margin:0;color:#b3bdca}
+#clientPage .client-form label{display:block;margin-bottom:7px;color:#eef2f7;font-weight:800;font-size:.88rem}
+#clientPage .client-form input{width:100%;min-height:48px;padding:0 14px;border:1px solid #3e4a5c;border-radius:10px;background:#202b3c;color:#fff;font-size:.98rem}
+#clientPage .client-form input:focus{border-color:#dda94f;box-shadow:0 0 0 3px rgba(221,169,79,.15)}
+#clientPage .client-form input[readonly]{background:#172235;color:#aeb8c6}
+#clientPage .client-profile-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:26px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08)}
+#clientPage .client-profile-actions .btn{min-width:160px}
+
+/* Minha conta */
+#clientPage .client-account-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 24px;max-width:900px}
+#clientPage .client-account-fields .full{grid-column:1/-1}
+
+/* Endereço: distribuição equilibrada, sem campos espremidos */
+#clientPage .client-address-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px 22px;align-items:end}
+#clientPage .client-address-grid .field{min-width:0;margin:0}
+#clientPage .client-address-grid .addr-cep{grid-column:span 3}
+#clientPage .client-address-grid .addr-state{grid-column:span 2}
+#clientPage .client-address-grid .addr-city{grid-column:span 7}
+#clientPage .client-address-grid .addr-street{grid-column:span 9}
+#clientPage .client-address-grid .addr-number{grid-column:span 3}
+#clientPage .client-address-grid .addr-neighborhood{grid-column:span 6}
+#clientPage .client-address-grid .addr-complement{grid-column:span 6}
+#clientPage .client-address-grid .addr-reference{grid-column:1/-1}
+
+/* Pedidos */
+#clientPage .client-orders-panel .client-orders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+#clientPage .client-order-card{padding:20px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#111d2e;color:#eef2f7}
+#clientPage .client-order-head,#clientPage .client-order-total{display:flex;justify-content:space-between;align-items:center;gap:14px}
+#clientPage .client-order-head span{padding:6px 10px;border-radius:999px;background:rgba(225,173,85,.16);color:#f2c574}
+#clientPage .client-order-items{display:grid;gap:6px;margin:16px 0;color:#c7d0db}
+
+/* Segurança */
+#clientPage .client-security-list{display:grid;gap:0;max-width:900px}
+#clientPage .client-security-list>div{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:20px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+#clientPage .client-security-list>div:last-child{border-bottom:0}
+#clientPage .client-security-list span:first-child{display:grid;gap:5px}
+#clientPage .client-security-list small{color:#aeb8c6;line-height:1.45}
+
+@media(max-width:900px){
+  #clientPage .client-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #clientPage .client-dashboard-sections{grid-template-columns:1fr}
+  #clientPage .client-orders-panel .client-orders{grid-template-columns:1fr}
+  #clientPage .client-address-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #clientPage .client-address-grid .field{grid-column:auto!important}
+  #clientPage .client-address-grid .addr-street,#clientPage .client-address-grid .addr-reference{grid-column:1/-1!important}
+}
+@media(max-width:640px){
+  #clientPage.client-is-logged .client-page{padding-top:14px}
+  #clientPage .client-account-bar{align-items:flex-start;padding:15px 16px}
+  #clientPage .client-account-bar .btn{min-width:auto}
+  #clientPage .client-tabs{padding:0 4px;gap:5px}
+  #clientPage .client-tab{padding:10px 11px;font-size:.82rem}
+  #clientPage .client-tab-panels{padding:18px 14px;min-height:420px}
+  #clientPage .client-summary-grid,#clientPage .client-account-fields,#clientPage .client-address-grid{grid-template-columns:1fr}
+  #clientPage .client-address-grid .field{grid-column:auto!important}
+  #clientPage .client-profile-actions{justify-content:stretch;flex-direction:column}
+  #clientPage .client-profile-actions .btn{width:100%;min-width:0}
+  #clientPage .client-security-list>div{align-items:flex-start;flex-direction:column}
+  #clientPage .client-security-list .btn{width:100%}
+}

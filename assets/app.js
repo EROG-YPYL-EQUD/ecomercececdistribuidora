@@ -1081,6 +1081,28 @@ async function getNextOrderCode(){
   const highest = await findHighestExistingOrderNumber();
   return String(Math.max(0, highest) + 1).padStart(6, '0');
 }
+async function loadCheckoutSavedAddresses(){
+  const field=$('#savedAddressField'), select=$('#orderSavedAddress');
+  if(!field || !select || typeof firebase==='undefined' || !firebase.auth || !firebase.auth().currentUser){field?.classList.add('hidden');return;}
+  try{
+    const snap=await clientProfileRef(firebase.auth().currentUser.uid)?.get();
+    const profile=snap?.exists ? (snap.data()||{}) : {};
+    const rows=getClientAddresses(profile);
+    if(!rows.length){field.classList.add('hidden');return;}
+    const defaultId=String(profile.defaultAddressId || rows[0].id);
+    select.innerHTML='<option value="">Preencher manualmente</option>'+rows.map(a=>`<option value="${esc(a.id)}" ${String(a.id)===defaultId?'selected':''}>${esc(a.label||'Endereço')} — ${esc(clientAddressSingleLine(a))}</option>`).join('');
+    select._clientAddresses=rows;
+    field.classList.remove('hidden');
+    const selected=rows.find(a=>String(a.id)===defaultId)||rows[0];
+    applyCheckoutAddress(selected);
+  }catch(err){console.error('Endereços no checkout:',err);field.classList.add('hidden');}
+}
+function applyCheckoutAddress(address){
+  if(!address) return;
+  $('#orderCep') && ($('#orderCep').value=formatClientCep(address.cep||''));
+  $('#orderCity') && ($('#orderCity').value=[titleCaseAddressText(address.city),String(address.state||'').toUpperCase()].filter(Boolean).join('/'));
+  $('#orderAddress') && ($('#orderAddress').value=clientAddressSingleLine(address));
+}
 function openCheckout(){
   const items = cartProducts();
   if(!items.length){
@@ -1100,6 +1122,7 @@ function openCheckout(){
   $('#pixCheckoutBox') && ($('#pixCheckoutBox').style.display = pix ? 'block' : 'none');
   if(pix) renderPixBlock({amount:total, txid:'PEDIDO', qrId:'#pixQrPreview', amountId:'#pixAmountPreview', payloadId:'#pixPayloadPreview', keyId:'#pixKeyText'});
 
+  loadCheckoutSavedAddresses();
   closeCart();
   openModal('#orderModal');
 }
@@ -1125,6 +1148,7 @@ function whatsappOrderMessage(order){
 }
 function setupCheckout(){
   $('#orderPayment')?.addEventListener('change', () => openCheckout());
+  $('#orderSavedAddress')?.addEventListener('change',e=>{const rows=e.currentTarget._clientAddresses||[];const a=rows.find(x=>String(x.id)===String(e.currentTarget.value));if(a) applyCheckoutAddress(a);});
 
   $('#orderForm')?.addEventListener('submit', async e => {
     e.preventDefault();
@@ -1158,6 +1182,7 @@ function setupCheckout(){
         city: sanitizeProductText($('#orderCity')?.value, 100),
         cep: digitsOnly($('#orderCep')?.value).slice(0, 8),
         address: sanitizeProductText($('#orderAddress')?.value, 220),
+        addressId: sanitizeProductText($('#orderSavedAddress')?.value || '',80),
         payment: sanitizeProductText($('#orderPayment')?.value || 'Pix', 60),
         note: sanitizeMultilineText($('#orderNote')?.value, 600),
         items: items.map(i => ({id:sanitizeProductText(i.id,80), name:sanitizeProductText(i.name,160), qty:Math.max(1, Number(i.qty || 1)), price:Number(i.price || 0)})),
@@ -1908,6 +1933,143 @@ function setClientButtonLoading(btn, active, text){
     btn.removeAttribute('aria-busy');
   }
 }
+let clientProfileCache = {};
+let clientOrdersCache = null;
+let clientOrdersLoaded = false;
+
+function clientProfileFromFields(){
+  return {
+    name: sanitizeProductText($('#clientName')?.value || '',120),
+    email: $('#clientEmail')?.value || '',
+    phone: digitsOnly($('#clientPhone')?.value || '').slice(0,14),
+    document: digitsOnly($('#clientDocument')?.value || '').slice(0,14),
+    cep: digitsOnly($('#clientCep')?.value || '').slice(0,8),
+    state: sanitizeProductText($('#clientState')?.value || '',2).toUpperCase(),
+    street: sanitizeProductText($('#clientStreet')?.value || '',160),
+    number: sanitizeProductText($('#clientNumber')?.value || '',20),
+    complement: sanitizeProductText($('#clientComplement')?.value || '',100),
+    neighborhood: sanitizeProductText($('#clientNeighborhood')?.value || '',100),
+    city: sanitizeProductText($('#clientCity')?.value || '',100),
+    reference: sanitizeProductText($('#clientReference')?.value || '',160)
+  };
+}
+function clientAddressFromFields(){
+  const base=clientProfileFromFields();
+  return {
+    id:sanitizeProductText($('#clientAddressId')?.value || '',80) || `addr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`,
+    label:sanitizeProductText($('#clientAddressLabel')?.value || 'Casa',40),
+    cep:base.cep,state:base.state,street:base.street,number:base.number,
+    complement:base.complement,neighborhood:base.neighborhood,city:base.city,reference:base.reference
+  };
+}
+function legacyClientAddress(profile={}){
+  if(!profile.street && !profile.address && !profile.city && !profile.cep) return null;
+  return {
+    id:'principal',label:'Casa',cep:profile.cep||'',state:profile.state||'',street:profile.street||profile.address||'',
+    number:profile.number||'',complement:profile.complement||'',neighborhood:profile.neighborhood||'',city:profile.city||'',reference:profile.reference||''
+  };
+}
+function getClientAddresses(profile=clientProfileCache){
+  const rows=Array.isArray(profile?.addresses) ? profile.addresses.filter(Boolean).map(a=>({...a})) : [];
+  const legacy=legacyClientAddress(profile);
+  if(!rows.length && legacy) rows.push(legacy);
+  return rows;
+}
+function getDefaultClientAddress(profile=clientProfileCache){
+  const rows=getClientAddresses(profile);
+  if(!rows.length) return null;
+  return rows.find(a=>String(a.id)===String(profile?.defaultAddressId)) || rows[0];
+}
+function titleCaseAddressText(value){
+  return String(value||'').trim().toLocaleLowerCase('pt-BR').replace(/(^|[\s,-])([a-záàâãéêíóôõúç])/g,(m,p,c)=>p+c.toLocaleUpperCase('pt-BR'));
+}
+function formatClientCep(value){
+  const d=digitsOnly(value||'').slice(0,8); return d.length===8 ? `${d.slice(0,5)}-${d.slice(5)}` : d;
+}
+function formatClientAddressLines(address){
+  if(!address) return [];
+  const line1=[titleCaseAddressText(address.street),address.number].filter(Boolean).join(', ');
+  const line2=[titleCaseAddressText(address.neighborhood),titleCaseAddressText(address.city),String(address.state||'').toUpperCase()].filter(Boolean).join(' · ');
+  const line3=[address.complement ? titleCaseAddressText(address.complement) : '', address.cep ? `CEP ${formatClientCep(address.cep)}` : ''].filter(Boolean).join(' · ');
+  return [line1,line2,line3].filter(Boolean);
+}
+function clientAddressSingleLine(address){ return formatClientAddressLines(address).join(', '); }
+function fillClientAddressForm(address=null,isDefault=false){
+  const a=address||{};
+  $('#clientAddressId') && ($('#clientAddressId').value=a.id||'');
+  $('#clientAddressLabel') && ($('#clientAddressLabel').value=a.label||'');
+  $('#clientCep') && ($('#clientCep').value=formatClientCep(a.cep||''));
+  $('#clientState') && ($('#clientState').value=a.state||'');
+  $('#clientStreet') && ($('#clientStreet').value=a.street||'');
+  $('#clientNumber') && ($('#clientNumber').value=a.number||'');
+  $('#clientComplement') && ($('#clientComplement').value=a.complement||'');
+  $('#clientNeighborhood') && ($('#clientNeighborhood').value=a.neighborhood||'');
+  $('#clientCity') && ($('#clientCity').value=a.city||'');
+  $('#clientReference') && ($('#clientReference').value=a.reference||'');
+  $('#clientAddressDefault') && ($('#clientAddressDefault').checked=!!isDefault);
+  $('#clientAddressFormTitle') && ($('#clientAddressFormTitle').textContent=address?'Editar endereço':'Adicionar endereço');
+  $('#clientCancelAddress')?.classList.toggle('hidden',!address);
+}
+function renderClientAddressBook(profile=clientProfileCache){
+  const box=$('#clientAddressList'); if(!box) return;
+  const rows=getClientAddresses(profile);
+  const defaultId=String(profile?.defaultAddressId || rows[0]?.id || '');
+  if(!rows.length){
+    box.innerHTML='<div class="client-empty-address"><strong>Nenhum endereço cadastrado.</strong><p>Adicione um endereço para agilizar seus próximos pedidos.</p></div>';
+    fillClientAddressForm(null,true); return;
+  }
+  box.innerHTML=rows.map(a=>{
+    const isDefault=String(a.id)===defaultId;
+    const lines=formatClientAddressLines(a);
+    return `<article class="client-address-card ${isDefault?'is-default':''}" data-address-id="${esc(a.id)}">
+      <div class="client-address-card-head"><div><strong>${esc(a.label||'Endereço')}</strong>${isDefault?'<span>Principal</span>':''}</div></div>
+      <div class="client-address-card-body">${lines.map(l=>`<p>${esc(l)}</p>`).join('')}</div>
+      <div class="client-address-card-actions"><button class="btn btn-soft" data-edit-client-address="${esc(a.id)}" type="button">Editar</button>${isDefault?'':`<button class="btn btn-soft" data-default-client-address="${esc(a.id)}" type="button">Definir como principal</button>`}${rows.length>1?`<button class="btn btn-soft client-danger" data-delete-client-address="${esc(a.id)}" type="button">Excluir</button>`:''}</div>
+    </article>`;
+  }).join('');
+  const currentId=$('#clientAddressId')?.value;
+  const current=rows.find(a=>String(a.id)===String(currentId)) || rows.find(a=>String(a.id)===defaultId) || rows[0];
+  fillClientAddressForm(current,String(current.id)===defaultId);
+}
+function renderClientDashboard(profile=clientProfileCache, orders=clientOrdersCache){
+  const name=String(profile?.name || firebase.auth()?.currentUser?.displayName || '').trim();
+  const firstName=name.split(/\s+/)[0] || '';
+  $('#clientWelcomeName') && ($('#clientWelcomeName').textContent=firstName ? `Olá, ${firstName}!` : 'Olá!');
+  const contact=[];
+  if(name) contact.push(`<strong>${esc(name)}</strong>`);
+  if(profile?.email) contact.push(esc(profile.email));
+  if(profile?.phone) contact.push(esc(profile.phone));
+  $('#clientContactSummary') && ($('#clientContactSummary').innerHTML=contact.length ? contact.join('<br>') : 'Complete seus dados de contato.');
+  const address=getDefaultClientAddress(profile);
+  const addressLines=formatClientAddressLines(address);
+  $('#clientAddressSummary') && ($('#clientAddressSummary').innerHTML=addressLines.length ? addressLines.map(l=>`<span>${esc(l)}</span>`).join('') : 'Não informado');
+  $('#clientDeliverySummary') && ($('#clientDeliverySummary').innerHTML=addressLines.length ? `<strong>${esc(address?.label||'Endereço principal')}</strong>${addressLines.map(l=>`<br>${esc(l)}`).join('')}` : 'Nenhum endereço cadastrado.');
+  renderClientAddressBook(profile);
+  if(Array.isArray(orders)){
+    $('#clientOrdersCount') && ($('#clientOrdersCount').textContent=String(orders.length));
+    const latest=orders[0];
+    $('#clientLastOrderStatus') && ($('#clientLastOrderStatus').textContent=latest ? (latest.status || orderDisplayCode(latest.code)) : 'Nenhum pedido');
+  }
+}
+function setClientTab(name, focus=true){
+  document.querySelectorAll('[data-client-tab]').forEach(btn=>{
+    const active=btn.dataset.clientTab===name;
+    btn.classList.toggle('is-active',active);
+    btn.setAttribute('aria-selected',active?'true':'false');
+    if(active && focus) btn.focus({preventScroll:true});
+  });
+  document.querySelectorAll('[data-client-panel]').forEach(panel=>{
+    const active=panel.dataset.clientPanel===name;
+    panel.classList.toggle('is-active',active);
+    panel.hidden=!active;
+  });
+  if(name==='orders' && firebase.auth()?.currentUser) loadClientOrders(firebase.auth().currentUser,true);
+}
+function setupClientTabs(){
+  document.querySelectorAll('[data-client-tab]').forEach(btn=>btn.addEventListener('click',()=>setClientTab(btn.dataset.clientTab,false)));
+  document.querySelectorAll('[data-go-client-tab]').forEach(btn=>btn.addEventListener('click',()=>setClientTab(btn.dataset.goClientTab,false)));
+}
+
 function renderClientOrderCard(order){
   const items=Array.isArray(order.items) ? order.items : [];
   return `<article class="client-order-card">
@@ -1927,33 +2089,39 @@ async function loadClientProfile(user){
     $('#clientEmail') && ($('#clientEmail').value=user.email || data.email || '');
     $('#clientPhone') && ($('#clientPhone').value=data.phone || '');
     $('#clientDocument') && ($('#clientDocument').value=data.document || '');
-    $('#clientCep') && ($('#clientCep').value=data.cep || '');
-    $('#clientState') && ($('#clientState').value=data.state || '');
-    $('#clientStreet') && ($('#clientStreet').value=data.street || data.address || '');
-    $('#clientNumber') && ($('#clientNumber').value=data.number || '');
-    $('#clientComplement') && ($('#clientComplement').value=data.complement || '');
-    $('#clientNeighborhood') && ($('#clientNeighborhood').value=data.neighborhood || '');
-    $('#clientCity') && ($('#clientCity').value=data.city || '');
-    $('#clientReference') && ($('#clientReference').value=data.reference || '');
+    const migratedAddresses=getClientAddresses(data);
+    const normalized={...data,addresses:migratedAddresses,defaultAddressId:data.defaultAddressId || migratedAddresses[0]?.id || '',email:user.email || data.email || '',name:data.name || user.displayName || ''};
+    clientProfileCache=normalized;
+    renderClientDashboard(clientProfileCache,clientOrdersCache);
   }catch(e){
     console.error('Perfil cliente:',e);
     throw e;
   }
 }
-async function loadClientOrders(user){
+async function loadClientOrders(user, force=false){
   const box=$('#clientOrders');
-  if(!box || !db()) return;
+  if(!box || !db()) return [];
+  if(clientOrdersLoaded && !force){
+    box.innerHTML=clientOrdersCache?.length ? clientOrdersCache.map(renderClientOrderCard).join('') : '<div class="card"><strong>Nenhum pedido vinculado a esta conta.</strong><p>Os próximos pedidos feitos enquanto você estiver conectado aparecerão aqui.</p></div>';
+    return clientOrdersCache || [];
+  }
   box.innerHTML='<div class="card"><strong>Carregando seus pedidos...</strong></div>';
   try{
     const snap=await fbItemsCollection(FB_ORDERS_DOC).where('customerUid','==',user.uid).get();
     const rows=[]; snap.forEach(d=>rows.push({...d.data(), id:d.id}));
     rows.sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    clientOrdersCache=rows;
+    clientOrdersLoaded=true;
+    renderClientDashboard(clientProfileCache,rows);
     box.innerHTML=rows.length ? rows.map(renderClientOrderCard).join('') : '<div class="card"><strong>Nenhum pedido vinculado a esta conta.</strong><p>Os próximos pedidos feitos enquanto você estiver conectado aparecerão aqui.</p></div>';
+    return rows;
   }catch(e){
     console.error('Pedidos cliente:',e);
     box.innerHTML='<div class="card"><strong>Não foi possível carregar os pedidos.</strong><p>Tente novamente em alguns instantes.</p></div>';
+    throw e;
   }
 }
+
 function setClientBootLoading(active,text='Carregando sua área...'){
   const loading=$('#clientBootLoading');
   if(!loading) return;
@@ -1964,24 +2132,33 @@ function setClientBootLoading(active,text='Carregando sua área...'){
 async function showClientLogged(user){
   const authBox=$('#clientAuthBox');
   const areaBox=$('#clientAreaBox');
-  setClientBootLoading(true,'Carregando seus dados...');
+  document.body.classList.add('client-is-logged');
+  setClientBootLoading(false);
   if(authBox) authBox.classList.add('hidden');
   if(areaBox) areaBox.classList.remove('hidden');
-  areaBox?.classList.add('is-loading');
   $('#clientUserEmail') && ($('#clientUserEmail').textContent=user.email || '');
-  const results=await Promise.allSettled([loadClientProfile(user),loadClientOrders(user)]);
-  const failed=results.some(r=>r.status==='rejected');
-  areaBox?.classList.remove('is-loading');
-  setClientBootLoading(false);
-  if(failed) setClientMessage('Algumas informações não puderam ser carregadas. Tente atualizar a página.');
+  $('#clientSecurityEmail') && ($('#clientSecurityEmail').textContent=user.email || '');
+  $('#clientSecurityProvider') && ($('#clientSecurityProvider').textContent=userHasProvider(user,'google.com') ? 'Conta Google vinculada' : 'Acesso por e-mail e senha');
+  setClientTab('dashboard',false);
+  try{
+    await loadClientProfile(user);
+    setClientMessage('');
+  }catch(e){
+    setClientMessage('Não foi possível carregar seus dados. Confira as regras do Firestore e tente novamente.');
+  }
+  // Carrega apenas o resumo dos pedidos em segundo plano; a aba renderiza sob demanda.
+  loadClientOrders(user,false).catch(()=>{});
 }
 function showClientLoggedOut(){
   const authBox=$('#clientAuthBox');
   const areaBox=$('#clientAreaBox');
+  document.body.classList.remove('client-is-logged');
+  clientProfileCache={}; clientOrdersCache=null; clientOrdersLoaded=false;
   setClientBootLoading(false);
   if(authBox) authBox.classList.remove('hidden');
   if(areaBox) areaBox.classList.add('hidden');
 }
+
 function setupClientAuthUi(){
   const login=$('#clientLoginForm');
   const register=$('#clientRegisterForm');
@@ -2127,6 +2304,7 @@ async function deleteClientAccount(auth, btn){
 function setupClientArea(){
   if(!$('#clientPage')) return;
   setupClientAuthUi();
+  setupClientTabs();
   if(typeof firebase==='undefined' || !firebase.auth){
     setClientMessage('Firebase Authentication não está disponível.');
     return;
@@ -2260,38 +2438,74 @@ function setupClientArea(){
 
   $('#clientLogout')?.addEventListener('click',()=>auth.signOut());
 
-  $('#clientProfileForm')?.addEventListener('submit',async e=>{
-    e.preventDefault();
+  async function saveClientSection(form, fields, successText){
     const user=auth.currentUser;
     if(!user) return;
-    const btn=e.currentTarget.querySelector('button[type="submit"]');
+    const btn=form.querySelector('button[type="submit"]');
     setClientButtonLoading(btn,true,'Salvando...');
     try{
-      const data={
-        name:sanitizeProductText($('#clientName').value,120),
-        email:user.email||'',
-        phone:digitsOnly($('#clientPhone').value).slice(0,14),
-        document:digitsOnly($('#clientDocument').value).slice(0,14),
-        cep:digitsOnly($('#clientCep').value).slice(0,8),
-        state:sanitizeProductText($('#clientState').value,2).toUpperCase(),
-        street:sanitizeProductText($('#clientStreet').value,160),
-        number:sanitizeProductText($('#clientNumber').value,20),
-        complement:sanitizeProductText($('#clientComplement').value,100),
-        neighborhood:sanitizeProductText($('#clientNeighborhood').value,100),
-        city:sanitizeProductText($('#clientCity').value,100),
-        reference:sanitizeProductText($('#clientReference').value,160),
-        updatedAt:serverTimestamp(),
-        updatedAtMs:Date.now()
-      };
+      const all=clientProfileFromFields();
+      const data={email:user.email||'',updatedAt:serverTimestamp(),updatedAtMs:Date.now()};
+      fields.forEach(k=>data[k]=all[k]);
       await clientProfileRef(user.uid).set(data,{merge:true});
-      await user.updateProfile({displayName:data.name});
-      setClientMessage('Dados salvos.',true);
+      if(fields.includes('name') && all.name) await user.updateProfile({displayName:all.name});
+      clientProfileCache={...clientProfileCache,...data};
+      renderClientDashboard(clientProfileCache,clientOrdersCache);
+      setClientMessage(successText,true);
     }catch(err){
-      console.error('Salvar perfil:',err);
-      setClientMessage('Não foi possível salvar seus dados.');
-    }finally{
-      setClientButtonLoading(btn,false);
+      console.error('Salvar dados cliente:',err);
+      setClientMessage('Não foi possível salvar. Tente novamente.');
+    }finally{setClientButtonLoading(btn,false);}
+  }
+  $('#clientProfileForm')?.addEventListener('submit',e=>{
+    e.preventDefault();
+    saveClientSection(e.currentTarget,['name','phone','document'],'Dados pessoais salvos.');
+  });
+  async function saveClientAddresses(profile,successText='Endereço salvo.'){
+    const user=auth.currentUser; if(!user) return;
+    await clientProfileRef(user.uid).set({addresses:profile.addresses,defaultAddressId:profile.defaultAddressId,updatedAt:serverTimestamp(),updatedAtMs:Date.now()},{merge:true});
+    clientProfileCache={...clientProfileCache,...profile};
+    renderClientDashboard(clientProfileCache,clientOrdersCache);
+    setClientMessage(successText,true);
+  }
+  $('#clientAddressForm')?.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const form=e.currentTarget; const btn=form.querySelector('button[type="submit"]');
+    setClientButtonLoading(btn,true,'Salvando...');
+    try{
+      const address=clientAddressFromFields();
+      if(!address.street || !address.city || !address.state){ setClientMessage('Informe rua, cidade e UF.'); return; }
+      const rows=getClientAddresses(clientProfileCache);
+      const index=rows.findIndex(a=>String(a.id)===String(address.id));
+      if(index>=0) rows[index]=address; else rows.push(address);
+      let defaultAddressId=clientProfileCache.defaultAddressId || rows[0]?.id || address.id;
+      if($('#clientAddressDefault')?.checked || rows.length===1) defaultAddressId=address.id;
+      await saveClientAddresses({addresses:rows,defaultAddressId});
+      fillClientAddressForm(address,String(defaultAddressId)===String(address.id));
+    }catch(err){console.error('Salvar endereço:',err);setClientMessage('Não foi possível salvar o endereço. Tente novamente.');}
+    finally{setClientButtonLoading(btn,false);}
+  });
+  $('#clientNewAddress')?.addEventListener('click',()=>{fillClientAddressForm(null,false);$('#clientAddressLabel')?.focus();});
+  $('#clientCancelAddress')?.addEventListener('click',()=>renderClientAddressBook(clientProfileCache));
+  $('#clientAddressList')?.addEventListener('click',async e=>{
+    const edit=e.target.closest('[data-edit-client-address]');
+    const makeDefault=e.target.closest('[data-default-client-address]');
+    const del=e.target.closest('[data-delete-client-address]');
+    const rows=getClientAddresses(clientProfileCache);
+    if(edit){const a=rows.find(x=>String(x.id)===String(edit.dataset.editClientAddress));if(a) fillClientAddressForm(a,String(a.id)===String(clientProfileCache.defaultAddressId));return;}
+    if(makeDefault){await saveClientAddresses({addresses:rows,defaultAddressId:makeDefault.dataset.defaultClientAddress},'Endereço principal atualizado.');return;}
+    if(del){
+      if(!confirm('Excluir este endereço?')) return;
+      const next=rows.filter(x=>String(x.id)!==String(del.dataset.deleteClientAddress));
+      const nextDefault=String(clientProfileCache.defaultAddressId)===String(del.dataset.deleteClientAddress) ? (next[0]?.id||'') : clientProfileCache.defaultAddressId;
+      await saveClientAddresses({addresses:next,defaultAddressId:nextDefault},'Endereço excluído.');
     }
+  });
+  $('#clientReloadOrders')?.addEventListener('click',()=>auth.currentUser && loadClientOrders(auth.currentUser,true));
+  $('#clientChangePassword')?.addEventListener('click',async()=>{
+    const user=auth.currentUser;
+    if(!user?.email){setClientMessage('Esta conta não possui e-mail disponível.');return;}
+    try{await auth.sendPasswordResetEmail(user.email);setClientMessage('Enviamos o link para alterar sua senha.',true);}catch(err){setClientMessage(clientAuthMessage(err));}
   });
 
   $('#clientDeleteAccount')?.addEventListener('click',e=>deleteClientAccount(auth,e.currentTarget));

@@ -4080,3 +4080,99 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(201,164,91,.18
 .client-profile-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.client-profile-actions .client-danger{margin-top:0;margin-left:auto}
 .client-profile-form input[readonly]{opacity:.78;cursor:not-allowed}
 @media(max-width:760px){.client-profile-grid{grid-template-columns:1fr}.client-profile-grid .full{grid-column:auto}.client-profile-actions{flex-direction:column}.client-profile-actions .btn{width:100%;margin-left:0}}
+
+
+/* V138 RC2 Patch 7 — área logada ampla */
+#clientPage #clientAreaBox{width:100%}
+#clientPage .client-dashboard{display:block;width:100%}
+#clientPage .client-profile-form{width:100%;padding:26px 28px;margin:0}
+#clientPage .client-profile-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 20px}
+#clientPage .client-profile-form .field{margin:0;min-width:0}
+#clientPage .client-profile-form input{min-height:46px;padding:0 14px;border-radius:11px;font-size:1rem}
+#clientPage .client-dashboard>section{margin-top:30px;width:100%}
+@media(max-width:980px){#clientPage .client-profile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){#clientPage .client-profile-form{padding:20px 16px}#clientPage .client-profile-grid{grid-template-columns:1fr;gap:14px}#clientPage .client-profile-grid .full{grid-column:auto}}
+
+/* V138 RC2 Patch 8 — central da conta em abas */
+#clientPage.client-is-logged .client-shell{max-width:1180px}
+#clientPage .client-account-area{width:100%}
+#clientPage .client-account-bar{border-radius:16px;padding:14px 18px;background:rgba(18,29,45,.92);border:1px solid rgba(210,160,72,.28)}
+#clientPage .client-account-bar span{color:#aeb8c7;font-size:.88rem}
+#clientPage .client-tabs{display:flex;gap:8px;overflow-x:auto;padding:0 2px 10px;margin:12px 0 0;scrollbar-width:thin}
+#clientPage .client-tab{flex:0 0 auto;border:1px solid rgba(210,160,72,.26);background:#172235;color:#d9e0e9;padding:11px 16px;border-radius:10px 10px 0 0;font-weight:800;cursor:pointer;transition:.2s}
+#clientPage .client-tab:hover{border-color:rgba(230,181,91,.7);color:#fff}
+#clientPage .client-tab.is-active{background:linear-gradient(180deg,#d8a34c,#b87828);color:#111;border-color:#e6b55b}
+#clientPage .client-tab-panels{border:1px solid rgba(210,160,72,.28);border-radius:0 18px 18px 18px;background:rgba(8,17,31,.86);min-height:430px;padding:24px}
+#clientPage .client-tab-panel[hidden]{display:none!important}
+#clientPage .client-tab-panel.is-active{display:block}
+#clientPage .client-eyebrow{display:block;color:#e7b85e;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+#clientPage .client-welcome{display:flex;align-items:center;justify-content:space-between;padding:8px 2px 22px;border-bottom:1px solid rgba(255,255,255,.08)}
+#clientPage .client-welcome h1{margin:0;font-size:clamp(1.65rem,3vw,2.25rem)}
+#clientPage .client-welcome p{margin:7px 0 0;color:#aeb8c7}
+#clientPage .client-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:22px 0}
+#clientPage .client-summary-card{display:flex;align-items:center;gap:13px;text-align:left;border:1px solid rgba(255,255,255,.1);background:linear-gradient(145deg,#172235,#101a2a);color:#fff;border-radius:15px;padding:17px;min-height:100px;cursor:pointer;transition:.2s}
+#clientPage .client-summary-card:hover{transform:translateY(-2px);border-color:rgba(230,181,91,.55);box-shadow:0 10px 28px rgba(0,0,0,.2)}
+#clientPage .client-summary-icon{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:rgba(216,163,76,.14);font-size:21px}
+#clientPage .client-summary-card span:last-child{display:grid;gap:4px;min-width:0}
+#clientPage .client-summary-card small{color:#aeb8c7}
+#clientPage .client-summary-card strong{font-size:1.02rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#clientPage .client-dashboard-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+#clientPage .client-info-card{border:1px solid rgba(255,255,255,.1);background:#111d2e;border-radius:15px;padding:19px}
+#clientPage .client-info-card-head{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:11px;margin-bottom:13px}
+#clientPage .client-info-card-head h2{margin:0;font-size:1.05rem}
+#clientPage .client-info-card-head button{border:0;background:none;color:#e7b85e;font-weight:800;cursor:pointer}
+#clientPage .client-info-content{color:#c5ccd6;line-height:1.65;min-height:76px}
+#clientPage .client-tab-panel .card{background:linear-gradient(145deg,rgba(21,31,47,.96),rgba(11,20,34,.98));border:1px solid rgba(210,160,72,.3);box-shadow:none}
+#clientPage .client-profile-form,#clientPage .client-address-form,#clientPage .client-orders-panel,#clientPage .client-security-panel{max-width:none;width:100%;padding:24px}
+#clientPage .client-section-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:22px;padding-bottom:15px;border-bottom:1px solid rgba(255,255,255,.08)}
+#clientPage .client-section-head h2{font-size:1.55rem}
+#clientPage .client-account-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+#clientPage .client-security-list{display:grid;gap:0}
+#clientPage .client-security-list>div{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+#clientPage .client-security-list>div:last-child{border-bottom:0}
+#clientPage .client-security-list span:first-child{display:grid;gap:4px}
+#clientPage .client-security-list small{color:#aeb8c7;line-height:1.4}
+#clientPage .client-danger-row{background:rgba(180,35,24,.06);margin:8px -10px -6px;padding:18px 10px!important;border-radius:12px}
+#clientPage .client-orders-panel .client-orders{grid-template-columns:repeat(2,minmax(0,1fr))}
+#clientPage .client-order-card{background:#111d2e;color:#e8edf4;border-color:rgba(255,255,255,.1)}
+#clientPage .client-order-card p{color:#aeb8c7}
+@media(max-width:980px){
+  #clientPage .client-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #clientPage .client-orders-panel .client-orders{grid-template-columns:1fr}
+}
+@media(max-width:720px){
+  #clientPage .client-tab-panels{padding:14px;border-radius:0 14px 14px 14px}
+  #clientPage .client-tabs{gap:6px}
+  #clientPage .client-tab{padding:10px 12px;font-size:.88rem}
+  #clientPage .client-summary-grid,#clientPage .client-dashboard-sections,#clientPage .client-account-fields{grid-template-columns:1fr}
+  #clientPage .client-summary-card{min-height:84px}
+  #clientPage .client-section-head,#clientPage .client-security-list>div{flex-direction:column;align-items:flex-start}
+  #clientPage .client-security-list .btn{width:100%}
+  #clientPage .client-profile-form,#clientPage .client-address-form,#clientPage .client-orders-panel,#clientPage .client-security-panel{padding:18px 14px}
+}
+#clientPage .client-address-form input{min-height:46px;padding:0 14px;border-radius:11px;font-size:1rem}
+
+/* Patch 9: organização ampla e equilibrada do formulário de endereço */
+#clientPage .client-address-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:18px 20px;align-items:end}
+#clientPage .client-address-grid .addr-cep{grid-column:span 4}
+#clientPage .client-address-grid .addr-state{grid-column:span 2}
+#clientPage .client-address-grid .addr-street{grid-column:1/-1}
+#clientPage .client-address-grid .addr-number{grid-column:span 3}
+#clientPage .client-address-grid .addr-complement{grid-column:span 4}
+#clientPage .client-address-grid .addr-neighborhood{grid-column:span 5}
+#clientPage .client-address-grid .addr-city{grid-column:span 7}
+#clientPage .client-address-grid .addr-reference{grid-column:1/-1}
+#clientPage .client-address-form .client-profile-actions{margin-top:22px}
+@media(max-width:900px){
+  #clientPage .client-address-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #clientPage .client-address-grid .field{grid-column:auto}
+  #clientPage .client-address-grid .addr-street,#clientPage .client-address-grid .addr-reference{grid-column:1/-1}
+}
+@media(max-width:620px){
+  #clientPage .client-address-grid{grid-template-columns:1fr;gap:14px}
+  #clientPage .client-address-grid .field{grid-column:auto!important}
+}
+
+/* V138 RC2 Patch 10 — endereços múltiplos e resumo legível */
+#clientPage{overflow-x:hidden}#clientPage .client-tab-panels,#clientPage .client-tab-panel,#clientPage .client-account-area{overflow:visible!important;height:auto!important;max-height:none!important}#clientPage #clientAddressSummary{display:flex;flex-direction:column;gap:2px;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25;font-size:.95rem}#clientPage #clientAddressSummary span:first-child{font-weight:800;color:#fff}#clientPage #clientAddressSummary span:not(:first-child){font-size:.82rem;color:#cbd3df;font-weight:500}#clientPage .client-address-book{margin-bottom:18px;padding:24px}#clientPage .client-address-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px}#clientPage .client-address-card{border:1px solid #344255;border-radius:16px;background:#111d2e;padding:18px;min-width:0}#clientPage .client-address-card.is-default{border-color:#d3a34b;box-shadow:0 0 0 1px rgba(211,163,75,.15)}#clientPage .client-address-card-head{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px}#clientPage .client-address-card-head>div{display:flex;align-items:center;gap:9px;flex-wrap:wrap}#clientPage .client-address-card-head strong{font-size:1.05rem}#clientPage .client-address-card-head span{padding:3px 8px;border-radius:999px;background:rgba(211,163,75,.16);color:#f0bd61;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}#clientPage .client-address-card-body{min-height:82px}#clientPage .client-address-card-body p{margin:3px 0;color:#d6dde8;line-height:1.4;overflow-wrap:anywhere}#clientPage .client-address-card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}#clientPage .client-address-card-actions .btn{min-height:38px;padding:8px 12px;font-size:.82rem}#clientPage .client-empty-address{grid-column:1/-1;border:1px dashed #465469;border-radius:14px;padding:22px;color:#c7cfdb}#clientPage .client-default-address-check{display:flex;align-items:center;gap:9px;margin:18px 0 2px;color:#e5eaf1;font-weight:700}#clientPage .client-default-address-check input{width:18px;height:18px;accent-color:#d3a34b}#clientPage .client-address-grid .addr-label{grid-column:span 6}#clientPage .client-address-grid .addr-cep{grid-column:span 4}#clientPage .client-address-grid .addr-state{grid-column:span 2}#clientPage .client-profile-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}#savedAddressField small{display:block;margin-top:6px;color:#667085;font-size:.78rem}@media(max-width:900px){#clientPage .client-address-list{grid-template-columns:1fr}#clientPage .client-address-grid .addr-label{grid-column:1/-1}}@media(max-width:620px){#clientPage .client-address-book{padding:18px 14px}#clientPage .client-address-card-actions{flex-direction:column}#clientPage .client-address-card-actions .btn{width:100%}}
+#clientPage,#clientPage .client-page,#clientPage .client-shell,#clientPage .client-account-area,#clientPage .client-tab-panels,#clientPage .client-tab-panel,#clientPage .client-dashboard-sections,#clientPage .client-info-card,#clientPage .client-address-book,#clientPage .client-address-form,#clientPage .client-orders-panel,#clientPage .client-security-panel{height:auto!important;max-height:none!important;overflow:visible!important}#clientPage .client-tabs{overflow:visible!important;flex-wrap:wrap;scrollbar-width:none!important;-ms-overflow-style:none!important}#clientPage .client-tabs::-webkit-scrollbar,#clientPage .client-account-area::-webkit-scrollbar,#clientPage .client-tab-panels::-webkit-scrollbar,#clientPage .client-tab-panel::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}@media(max-width:640px){#clientPage .client-tabs{overflow:visible!important;flex-wrap:wrap;padding-bottom:8px}}
