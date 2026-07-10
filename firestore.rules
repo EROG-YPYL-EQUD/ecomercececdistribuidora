@@ -69,6 +69,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+
+
+    // Contador sequencial de pedidos: permite ao cliente gerar #000001, #000002...
+    match /cec_ecommerce_online/contador_pedidos {
+      allow read: if false;
+      allow create: if request.resource.data.keys().hasOnly(['ultimoNumero', 'updatedAt', 'updatedAtMs']) &&
+                    request.resource.data.ultimoNumero == 1;
+      allow update: if request.resource.data.keys().hasOnly(['ultimoNumero', 'updatedAt', 'updatedAtMs']) &&
+                    request.resource.data.ultimoNumero == resource.data.ultimoNumero + 1;
+      allow delete: if isAdmin();
+    }
+
     // Bloqueia qualquer outro caminho, incluindo pedidos antigos agregados.
     match /{document=**} {
       allow read, write: if false;

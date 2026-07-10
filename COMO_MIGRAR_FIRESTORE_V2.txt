@@ -1,0 +1,21 @@
+COMO MIGRAR O FIRESTORE PARA A ESTRUTURA V2
+
+1) Publique ou abra o arquivo MIGRAR_FIRESTORE_V2.html no navegador.
+2) Faça login com o mesmo usuário admin do painel.
+3) Clique em "Migrar produtos antigos para produtos_v2".
+4) Clique em "Migrar pedidos antigos para pedidos_v2".
+5) No Firebase Console, confirme que foram criados documentos em:
+   cec_ecommerce_online > produtos_v2 > items
+   cec_ecommerce_online > pedidos_v2 > items
+6) Aplique o arquivo firestore.rules no Firebase.
+7) Teste:
+   - abrir loja;
+   - adicionar produto pelo admin;
+   - excluir produto pelo admin;
+   - criar pedido pelo site;
+   - ver pedido no admin;
+   - acompanhar pedido pelo código.
+
+IMPORTANTE:
+A migração não apaga os dados antigos.
+O site ainda possui fallback temporário para ler produtos antigos se produtos_v2 estiver vazio.

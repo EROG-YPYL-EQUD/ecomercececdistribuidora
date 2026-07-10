@@ -13,7 +13,7 @@ Arquivos ajustados:
 Depois de subir no GitHub:
 1. Aguarde o Vercel ficar Ready
 2. Abra:
-   https://www.cecdistribuidora.com.br.br.br/index.html
+   https://www.cecdistribuidora.com.br/index.html
 
 Ele deve mudar para:
-   https://www.cecdistribuidora.com.br.br.br/
+   https://www.cecdistribuidora.com.br/

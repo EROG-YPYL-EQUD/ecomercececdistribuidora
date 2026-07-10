@@ -1,0 +1,17 @@
+VERSÃO 130 - LINK DA LOJA COM CATEGORIA
+
+Corrigido:
+- Ao clicar em Toner, Cartucho, Fotocondutor etc., o link passa a mostrar a categoria.
+- Exemplo:
+  /loja.html?categoria=toner
+  /loja.html?categoria=cartucho
+  /loja.html?categoria=fotocondutor
+- Se abrir o link direto com categoria, a loja já tenta aplicar o filtro correspondente.
+- "Todos" volta para /loja.html sem categoria.
+- HTML força app.js?v=130 e styles.css?v=130.
+
+Mantido:
+- IA busca parcial por nome/código.
+- IA reconhece marcas cadastradas.
+- Login admin corrigido.
+- Texto da IA preto/visível.

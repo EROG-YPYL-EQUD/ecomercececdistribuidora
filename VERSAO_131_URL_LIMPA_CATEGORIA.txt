@@ -1,0 +1,19 @@
+VERSÃO 131 - URL LIMPA NAS CATEGORIAS DA LOJA
+
+Corrigido:
+- Ao clicar em Toner, Cartucho, Fotocondutor etc., o link fica sem .html.
+- Exemplo correto:
+  /loja?categoria=toner
+  /loja?categoria=cartucho
+  /loja?categoria=fotocondutor
+- Não fica mais:
+  /loja.html?categoria=toner
+- Se abrir /loja.html, o site troca para /loja.
+- vercel.json atualizado com cleanUrls e rewrites para /loja funcionar no Vercel.
+- HTML força app.js?v=131 e styles.css?v=131.
+
+Mantido:
+- IA busca parcial por nome/código.
+- IA reconhece marcas cadastradas.
+- Login admin corrigido.
+- Texto da IA preto/visível.

@@ -1,7 +1,7 @@
 VERSÃO 101 - DOMÍNIO OFICIAL .COM.BR
 
 Domínio oficial configurado:
-https://www.cecdistribuidora.com.br.br
+https://www.cecdistribuidora.com.br
 
 Base usada:
 - versão 100
@@ -21,14 +21,14 @@ Ajustado:
 - URLs técnicas que apontavam para .com ou Vercel
 
 Depois de subir no GitHub e o Vercel ficar Ready, teste:
-https://www.cecdistribuidora.com.br.br/
-https://www.cecdistribuidora.com.br.br/loja
-https://www.cecdistribuidora.com.br.br/admin.html
-https://www.cecdistribuidora.com.br.br/robots.txt
-https://www.cecdistribuidora.com.br.br/sitemap.xml
+https://www.cecdistribuidora.com.br/
+https://www.cecdistribuidora.com.br/loja
+https://www.cecdistribuidora.com.br/admin.html
+https://www.cecdistribuidora.com.br/robots.txt
+https://www.cecdistribuidora.com.br/sitemap.xml
 
 No Google Search Console, use agora a propriedade:
-https://www.cecdistribuidora.com.br.br/
+https://www.cecdistribuidora.com.br/
 
 Envie:
 sitemap.xml

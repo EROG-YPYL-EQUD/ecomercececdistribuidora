@@ -1,0 +1,32 @@
+AJUSTE FIRESTORE V2 - C&C DISTRIBUIDORA
+
+Alterações realizadas:
+
+1. Produtos agora usam estrutura com documento individual:
+   cec_ecommerce_online/produtos_v2/items/{produtoId}
+
+2. Pedidos agora usam estrutura com documento individual:
+   cec_ecommerce_online/pedidos_v2/items/{codigoPedido}
+
+3. O painel administrativo foi ajustado para salvar, editar e excluir produtos nessa estrutura nova.
+
+4. O checkout foi ajustado para gravar pedidos em pedidos_v2/items.
+
+5. O painel admin foi ajustado para listar pedidos de pedidos_v2/items.
+
+6. A página de acompanhamento busca primeiro em pedidos_v2/items e, se não encontrar, tenta a estrutura antiga pedidos_por_codigo/items.
+
+7. Foi incluído o arquivo MIGRAR_FIRESTORE_V2.html para copiar os dados antigos para a estrutura nova sem apagar nada.
+
+8. Foi atualizado o arquivo firestore.rules com regras mais seguras:
+   - produtos: leitura pública, escrita apenas admin;
+   - configurações: leitura pública, escrita apenas admin;
+   - pedidos: criação pública, leitura/alteração/exclusão apenas admin;
+   - caminhos antigos mantidos apenas como compatibilidade temporária.
+
+Recomendação:
+Depois que confirmar que tudo está funcionando em produtos_v2 e pedidos_v2, as regras temporárias dos caminhos antigos podem ser removidas.
+
+9. Firebase Auth foi removido das páginas públicas. Continua apenas em:
+   - admin.html
+   - MIGRAR_FIRESTORE_V2.html

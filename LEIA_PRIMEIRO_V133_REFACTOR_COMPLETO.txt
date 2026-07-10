@@ -1,0 +1,32 @@
+VERSÃO V133 - REFACTOR FIRESTORE COMPLETO
+
+Esta versão foi ajustada para usar a estrutura nova do Firestore sem manter produtos e pedidos como arrays grandes dentro de um documento.
+
+Estrutura usada:
+cec_ecommerce_online/produtos_v2/items/{produtoId}
+cec_ecommerce_online/pedidos_v2/items/{codigoPedido}
+cec_ecommerce_online/pedidos_por_codigo/items/{codigoPedido}
+cec_ecommerce_online/configuracoes
+
+O que foi ajustado:
+1. Loja lê produtos de produtos_v2/items.
+2. Admin grava cada produto como documento individual.
+3. Pedidos são gravados em pedidos_v2/items para o admin.
+4. Acompanhamento de pedido lê um espelho público em pedidos_por_codigo/items.
+5. O espelho público não grava endereço, telefone nem observações.
+6. Alteração de status no admin atualiza também o espelho público.
+7. Exclusão de pedido no admin remove também o espelho público.
+8. Regras Firestore foram atualizadas para essa estrutura.
+9. Página MIGRAR_FIRESTORE_V2.html copia dados antigos para a estrutura nova sem apagar nada.
+
+Ordem recomendada:
+1. Publicar esta versão em ambiente de teste.
+2. Abrir MIGRAR_FIRESTORE_V2.html.
+3. Logar com o admin.
+4. Rodar migração de produtos e pedidos.
+5. Conferir no Firestore se produtos_v2/items e pedidos_v2/items foram criados.
+6. Testar loja, carrinho, pedido, acompanhamento e admin.
+7. Aplicar firestore.rules.
+8. Só depois usar em produção.
+
+Não apague a estrutura antiga até confirmar que tudo funciona.

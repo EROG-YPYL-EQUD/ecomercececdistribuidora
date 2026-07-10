@@ -9,6 +9,6 @@ Ajuste feito:
 - Admin continua igual em /admin.html.
 
 Teste depois do deploy:
-https://www.cecdistribuidora.com.br.br.br/loja
+https://www.cecdistribuidora.com.br/loja
 
 Para testar bem, cadastre mais de 15 produtos no Admin.

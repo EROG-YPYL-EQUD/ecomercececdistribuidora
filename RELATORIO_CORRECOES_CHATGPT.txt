@@ -1,0 +1,33 @@
+CORREÇÕES APLICADAS - C & C Distribuidora v131 revisada
+
+1. SEO e domínio
+- Corrigido domínio duplicado .br.br.br/.br.br para https://www.cecdistribuidora.com.br.
+- Corrigido _next do formulário de contato.
+- Corrigido sitemap/README/textos com domínio incorreto.
+- Corrigido conflito de meta robots em obrigado.html, mantendo noindex,nofollow.
+
+2. HTML
+- Removida duplicação de scripts em politica-privacidade.html e termos.html.
+- Removidos meta no-cache das páginas públicas para melhorar cache e performance. Mantido no admin.
+
+3. Segurança e LGPD
+- Adicionado arquivo firestore.rules com regras recomendadas para Firestore.
+- Pedidos novos passam a ser gravados em documento individual por código em pedidos_por_codigo/items/{codigo}.
+- Página pública de acompanhamento passa a buscar pedido por código, em vez de depender de lista geral completa no navegador.
+- Admin mantém leitura da lista de pedidos, mas por área autenticada.
+- Adicionados headers de segurança no vercel.json: nosniff, SAMEORIGIN, Referrer-Policy, Permissions-Policy, HSTS e noindex/no-store para admin.
+
+4. Bugs de pedido
+- Código do pedido deixou de depender de sequência em localStorage.
+- Novo formato: CEC-AAAAMMDD-0000, reduzindo risco de colisão entre navegadores diferentes.
+- Pedidos individuais reduzem risco de sobrescrita por concorrência.
+
+5. Compatibilidade
+- Mantida estrutura estática compatível com Vercel.
+- Mantida compatibilidade com Firebase compat SDK já usado no projeto.
+- Mantidos arquivos originais e visual principal.
+
+ATENÇÃO ANTES DE PUBLICAR
+- Publicar as regras do arquivo firestore.rules no console do Firebase.
+- Conferir se Firebase Authentication está ativo e se apenas emails autorizados têm acesso ao admin.
+- Testar: criar produto, editar produto, finalizar pedido, consultar pedido e alterar status no admin.

@@ -1,0 +1,16 @@
+V134.1 - ajuste pontual
+
+1. Numeração de pedidos
+- O código do pedido deixa de aparecer como código aleatório.
+- Novos pedidos passam a usar numeração sequencial: #000001, #000002, #000003...
+- Internamente o código salvo é 000001, 000002 etc.; a tela exibe com #.
+- Quando houver Firestore disponível, o número é gerado por transação no documento cec_ecommerce_online/contador_pedidos para reduzir risco de duplicidade.
+- Se o Firestore falhar, há fallback local provisório.
+
+2. Selects
+- Ajustado CSS para que as opções dos menus suspensos fiquem com texto preto e fundo branco.
+- Não foram alteradas as opções existentes do sistema.
+
+3. Firestore rules
+- O arquivo firestore.rules recebeu regra para permitir atualização controlada do contador sequencial.
+- Só aplique as regras após testar o site.

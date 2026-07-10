@@ -4020,3 +4020,18 @@ td{
 [data-filter].active{
   outline:2px solid rgba(217,173,99,.45);
 }
+
+
+/* V134.1 - opções dos selects legíveis no menu aberto */
+select option,
+.field select option,
+.checkout-form select option{
+  color:#111 !important;
+  background:#fff !important;
+}
+select optgroup,
+.field select optgroup,
+.checkout-form select optgroup{
+  color:#111 !important;
+  background:#fff !important;
+}

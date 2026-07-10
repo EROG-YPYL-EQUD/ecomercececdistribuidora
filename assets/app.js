@@ -14,6 +14,7 @@ const FB_COLLECTION = 'cec_ecommerce_online';
 const FB_PRODUCTS_DOC = 'produtos_v2';
 const FB_ORDERS_DOC = 'pedidos_v2';
 const FB_ITEMS_SUBCOLLECTION = 'items';
+const FB_ORDER_COUNTER_DOC = 'contador_pedidos';
 
 const CEC_DEFAULT_PRODUCTS = [
   {id:1, name:'Toner Compatível Samsung D204 MLT-D204U', category:'Toner', price:105, tag:'Destaque', stock:12, desc:'Toner compatível para alta produtividade em impressoras Samsung.', image:'assets/img/prod-toner.svg'},
@@ -89,7 +90,15 @@ function sanitizeMultilineText(value, max=1200){
   return String(value || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ').trim().slice(0, max);
 }
 function cleanOrderCode(value){
-  return String(value || '').toUpperCase().replace(/[^A-Z0-9\-]/g, '').slice(0, 32);
+  const text = String(value || '').toUpperCase().trim();
+  const digits = text.replace(/\D/g, '');
+  if(digits && digits.length <= 6) return digits.padStart(6, '0');
+  return text.replace(/[^A-Z0-9\-]/g, '').slice(0, 32);
+}
+function orderDisplayCode(code){
+  const normalized = normalizeCode(code);
+  if(/^\d{6}$/.test(normalized)) return '#' + normalized;
+  return String(code || '');
 }
 
 const $ = (sel, root=document) => root.querySelector(sel);
@@ -983,16 +992,31 @@ async function copyTextValue(text, label='Copiado'){
   try{ await navigator.clipboard.writeText(text); toast(label); }catch(e){ toast('Não foi possível copiar.'); }
 }
 function makeCode(){
-  const date = new Date();
-  const ymd = date.toISOString().slice(0,10).replace(/-/g,'');
-  const bytes = new Uint32Array(1);
-  if(window.crypto && window.crypto.getRandomValues){
-    window.crypto.getRandomValues(bytes);
-  }else{
-    bytes[0] = Math.floor(Math.random() * 0xffffffff);
+  const last = Number(localStorage.getItem('cec_last_order_number') || '0') + 1;
+  localStorage.setItem('cec_last_order_number', String(last));
+  return String(last).padStart(6, '0');
+}
+async function getNextOrderCode(){
+  if(db() && typeof db().runTransaction === 'function'){
+    const ref = fbDoc(FB_ORDER_COUNTER_DOC);
+    if(ref){
+      try{
+        const next = await db().runTransaction(async transaction => {
+          const snap = await transaction.get(ref);
+          const current = snap.exists ? Number((snap.data() || {}).ultimoNumero || 0) : 0;
+          const value = Math.max(0, current) + 1;
+          transaction.set(ref, {ultimoNumero:value, updatedAt:serverTimestamp(), updatedAtMs:Date.now()}, {merge:true});
+          return value;
+        });
+        localStorage.setItem('cec_last_order_number', String(next));
+        return String(next).padStart(6, '0');
+      }catch(e){
+        console.error('Contador de pedidos Firebase:', e);
+        toast('Não consegui gerar número online. Usando número local provisório.');
+      }
+    }
   }
-  const random = String(bytes[0] % 1000000).padStart(6, '0');
-  return `CEC-${ymd}-${random}`;
+  return makeCode();
 }
 function openCheckout(){
   const items = cartProducts();
@@ -1019,7 +1043,7 @@ function openCheckout(){
 function whatsappOrderMessage(order){
   const lines = [
     `Olá, fiz um pedido no site da C & C Distribuidora.`,
-    `Código: ${order.code}`,
+    `Código: ${orderDisplayCode(order.code)}`,
     `Cliente: ${order.customer}`,
     `WhatsApp: ${order.phone}`,
     `Pagamento: ${order.payment}`,
@@ -1039,7 +1063,7 @@ function whatsappOrderMessage(order){
 function setupCheckout(){
   $('#orderPayment')?.addEventListener('change', () => openCheckout());
 
-  $('#orderForm')?.addEventListener('submit', e => {
+  $('#orderForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     const items = cartProducts();
     if(!items.length){
@@ -1050,7 +1074,7 @@ function setupCheckout(){
 
     const total = cartTotal(items);
     const order = {
-      code: makeCode(),
+      code: await getNextOrderCode(),
       createdAt: new Date().toISOString(),
       createdAtLabel: nowText(),
       customer: sanitizeProductText($('#orderName')?.value, 120),
@@ -1076,12 +1100,18 @@ function setupCheckout(){
     renderCart();
     closeModal($('#orderModal'));
 
-    $('#orderDoneCode') && ($('#orderDoneCode').textContent = order.code);
-    if(order.payment === 'Pix'){
+    $('#orderDoneCode') && ($('#orderDoneCode').textContent = orderDisplayCode(order.code));
+    const isPixPayment = order.payment === 'Pix';
+    const donePixPanel = $('#orderDonePixPanel');
+    if(donePixPanel) donePixPanel.style.display = isPixPayment ? 'grid' : 'none';
+    if(isPixPayment){
       $('#orderDonePix') && ($('#orderDonePix').innerHTML = `<strong>Pagamento Pix:</strong> envie o comprovante pelo WhatsApp para confirmar o pedido.`);
       renderPixBlock({amount:order.total, txid:order.code, qrId:'#pixQrDone', amountId:'#pixAmountDone', payloadId:'#pixPayloadDone', keyId:'#pixKeyDone'});
     }else{
-      $('#orderDonePix') && ($('#orderDonePix').textContent = 'Pagamento a combinar com a loja.');
+      $('#orderDonePix') && ($('#orderDonePix').textContent = 'Pagamento a combinar com a loja. Nossa equipe entrará em contato para orientar a forma de pagamento.');
+      $('#pixQrDone') && ($('#pixQrDone').removeAttribute('src'));
+      $('#pixAmountDone') && ($('#pixAmountDone').textContent = '');
+      $('#pixPayloadDone') && ($('#pixPayloadDone').value = '');
     }
     openModal('#orderDoneModal');
 
@@ -1495,7 +1525,7 @@ function renderAdminOrders(){
   const orders = loadOrders();
   body.innerHTML = orders.length ? orders.map(o => `
     <tr>
-      <td><strong>${esc(o.code)}</strong><br><small>${esc(o.createdAtLabel || '')}</small></td>
+      <td><strong>${esc(orderDisplayCode(o.code))}</strong><br><small>${esc(o.createdAtLabel || '')}</small></td>
       <td>${esc(o.customer || '')}<br><small>${esc(o.phone || '')}</small></td>
       <td>${(o.items || []).map(i => `${esc(i.name)} x ${i.qty}`).join('<br>')}</td>
       <td>${fmt(o.total)}</td>
@@ -1511,10 +1541,10 @@ function renderAdminOrders(){
 function setupOrdersAdmin(){
   $('#refreshOrdersBtnV43')?.addEventListener('click', renderAdminOrders);
 
-  $('#manualOrderForm')?.addEventListener('submit', e => {
+  $('#manualOrderForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     const order = {
-      code: makeCode(),
+      code: await getNextOrderCode(),
       createdAt: new Date().toISOString(),
       createdAtLabel: nowText(),
       customer: $('#manualName')?.value.trim() || '',
@@ -1657,10 +1687,9 @@ function setupBackupAdmin(){
 
 function normalizeCode(code){
   const text = String(code || '').trim().toUpperCase();
-  if(/^CEC-\d{8}-\d{4}$/.test(text)) return text;
+  if(/^CEC-\d{8}-\d{4,6}$/.test(text)) return text;
   const digits = text.replace(/\D/g,'');
-  if(digits.length > 6) return 'CEC-' + digits;
-  if(digits) return 'CEC-' + digits.padStart(6,'0');
+  if(digits && digits.length <= 6) return digits.padStart(6,'0');
   return text;
 }
 function findOrderByCode(code){

@@ -1,0 +1,75 @@
+RELATÓRIO DE SEGURANÇA - V134
+
+Base: cec_ecommerce_site_v133_refactor_firestore_completo(2).zip
+Objetivo: corrigir os pontos da auditoria de segurança sem nova mudança conceitual.
+
+1. LOGIN ADMIN
+Status: Mantido e reforçado pelo Firebase Auth.
+O painel continua exigindo autenticação real pelo Firebase Authentication. A segurança efetiva depende também do UID fixado nas regras do Firestore.
+
+2. FIRESTORE / REGRAS
+Status: Regras revisadas no arquivo firestore.rules.
+Produtos V2 ficam públicos para leitura e somente admin pode criar, editar ou excluir.
+Pedidos completos só podem ser lidos, atualizados ou excluídos pelo admin.
+O cliente pode criar pedido, mas a regra agora valida campos permitidos, tamanho básico e formato mínimo.
+O acompanhamento público usa pedidos_por_codigo/items e não aceita telefone, endereço ou observação.
+
+3. PERMISSÕES
+Status: Corrigido/organizado.
+O navegador público não tem permissão para alterar produtos.
+O navegador público não tem permissão para listar pedidos completos.
+
+4. EXPOSIÇÃO DE PEDIDOS / LGPD
+Status: Melhorado.
+O espelho público de pedido foi mantido apenas para acompanhamento por código.
+Foram removidos do espelho público dados sensíveis como telefone, endereço completo e observação.
+O nome exibido no acompanhamento fica reduzido ao primeiro nome.
+
+5. XSS
+Status: Melhorado.
+A função esc() já estava correta para textos inseridos via innerHTML.
+Foi adicionada higienização complementar para textos de produtos e pedidos antes de salvar.
+URLs de imagem foram limitadas a http/https com extensão JPG/PNG/WEBP ou arquivos locais seguros em assets/img.
+Data URL de imagem agora aceita apenas JPEG/PNG/WEBP em base64.
+
+6. CSRF
+Status: Sem risco relevante no modelo atual.
+Como o app usa Firebase SDK diretamente com autenticação/token e não cookies de sessão clássicos, CSRF tradicional não é o principal vetor.
+
+7. FIREBASE CONFIG
+Status: Sem alteração necessária.
+As chaves públicas do firebase-config.js não são segredo. A proteção real fica nas regras do Firestore e no Firebase Auth.
+
+8. UPLOAD DE IMAGENS
+Status: Corrigido.
+O input do admin agora aceita apenas image/jpeg, image/png e image/webp.
+O JavaScript bloqueia SVG e outros image/*.
+Limite aplicado: 2 MB por arquivo antes de processar no FileReader.
+Há validação de MIME, validação do Data URL e limite de dimensão máxima antes de redimensionar no canvas.
+A imagem continua sendo convertida para JPEG compactado antes de salvar.
+
+9. CÓDIGO DE PEDIDO
+Status: Melhorado, mas não é equivalente a Cloud Function.
+O código agora usa crypto.getRandomValues quando disponível, reduzindo muito o risco de repetição comparado ao Math.random simples.
+Para garantia absoluta em alto volume, o ideal futuro seria gerar o ID por Cloud Function ou usar ID automático do Firestore.
+
+10. HEADERS / VERCEL
+Status: Mantido.
+O vercel.json já contém headers básicos de segurança e cache.
+
+ARQUIVOS PRINCIPAIS ALTERADOS
+- assets/app.js
+- admin.html
+- firestore.rules
+- páginas HTML: versão do app.js atualizada para v134-security
+
+ORDEM RECOMENDADA
+1. Subir esta versão em ambiente de teste.
+2. Testar login admin.
+3. Testar cadastro/edição/exclusão de produto.
+4. Testar finalização de pedido.
+5. Testar acompanhamento por código.
+6. Só depois publicar as regras firestore.rules.
+
+OBSERVAÇÃO IMPORTANTE
+Esta versão parte da estrutura V2 já existente no ZIP recebido. Não volte a aplicar regras antigas se for usar esta versão V134.
