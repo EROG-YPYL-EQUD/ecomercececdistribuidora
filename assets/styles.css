@@ -4035,3 +4035,26 @@ select optgroup,
   color:#111 !important;
   background:#fff !important;
 }
+
+
+/* V137 UX: mensagens, foco, acessibilidade e responsividade */
+:focus-visible{outline:3px solid rgba(201,164,91,.95);outline-offset:3px}
+button:disabled,.btn:disabled{opacity:.68;cursor:not-allowed;filter:grayscale(.1)}
+input:invalid,select:invalid,textarea:invalid{border-color:#b42318}
+input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(201,164,91,.18)}
+.field label{display:inline-block;margin-bottom:6px}
+.toast{max-width:min(92vw,560px);text-align:center;line-height:1.35}
+.shop-loading-v83{min-height:180px}
+.modal[aria-hidden="false"]{display:flex}
+@media (max-width:720px){
+  .modal{align-items:flex-end;padding:0}
+  .modal-card{border-radius:22px 22px 0 0;max-height:94vh;width:100%}
+  .modal-body{padding:16px}
+  .form-grid{grid-template-columns:1fr}
+  .actions{gap:10px}
+  .actions .btn,.checkout-form .btn{width:100%;justify-content:center}
+  input,select,textarea,button{font-size:16px}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}
+}

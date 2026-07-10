@@ -124,8 +124,30 @@ function toast(message){
   const el = $('#toast');
   if(!el) return;
   el.textContent = message;
+  el.setAttribute('role','status');
+  el.setAttribute('aria-live','polite');
+  el.setAttribute('aria-atomic','true');
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2200);
+  clearTimeout(window.__cecToastTimer);
+  window.__cecToastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+function setButtonLoading(btn, active, text){
+  if(!btn) return;
+  if(active){
+    btn.dataset.originalText = btn.dataset.originalText || btn.textContent;
+    btn.textContent = text || 'Aguarde...';
+    btn.disabled = true;
+    btn.setAttribute('aria-busy','true');
+  }else{
+    btn.textContent = btn.dataset.originalText || btn.textContent;
+    btn.disabled = false;
+    btn.removeAttribute('aria-busy');
+  }
+}
+function focusFirstInvalid(form){
+  const invalid = form?.querySelector(':invalid');
+  if(invalid){ invalid.focus(); return true; }
+  return false;
 }
 
 let PRODUCTS = readJson('cec_products', CEC_DEFAULT_PRODUCTS);
@@ -144,11 +166,13 @@ function setShopLoadingState(active){
   const grid = $('#productGrid');
   if(!grid) return;
   if(active){
+    grid.setAttribute('aria-busy','true');
     grid.classList.add('shop-grid-loading-v83');
     if(!grid.innerHTML.trim()){
       grid.innerHTML = '<div class="shop-loading-v83"><strong>Carregando produtos...</strong><span>Aguarde um instante.</span></div>';
     }
   }else{
+    grid.setAttribute('aria-busy','false');
     grid.classList.remove('shop-grid-loading-v83');
     grid.classList.add('shop-grid-ready-v83');
   }
@@ -645,7 +669,7 @@ function shopCard(product){
       <div class="card-image-v67 card-image-v73">
         <div class="product-art product-art-img product-art-v79">
           <span class="badge">${esc(product.tag || product.category || 'Produto')}</span>
-          <img src="${esc(src)}" alt="${esc(product.name || 'Produto')}" loading="eager" decoding="async" fetchpriority="high"
+          <img src="${esc(src)}" alt="${esc(product.name || 'Produto')}" loading="lazy" decoding="async"
                onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='${esc(fallback)}';}else{this.style.display='none';this.nextElementSibling.style.display='grid';}">
           <span class="fallback-icon">${productIcon(product.category)}</span>
         </div>
@@ -787,7 +811,7 @@ function openProductModal(id){
   if(body){
     body.innerHTML = `
       <div class="modal-product-grid-v79">
-        <div class="product-art product-art-img modal-product-art"><img src="${esc(productImage(p))}" alt="${esc(p.name || '')}"><span class="fallback-icon">${productIcon(p.category)}</span></div>
+        <div class="product-art product-art-img modal-product-art"><img src="${esc(productImage(p))}" alt="${esc(p.name || '')}" loading="lazy" decoding="async"><span class="fallback-icon">${productIcon(p.category)}</span></div>
         <div>
           <p>${esc(p.desc || '')}</p>
           ${p.brand ? `<p><strong>Marca:</strong> ${esc(p.brand)}</p>` : ''}
@@ -1102,6 +1126,14 @@ function setupCheckout(){
 
   $('#orderForm')?.addEventListener('submit', async e => {
     e.preventDefault();
+    const form = e.currentTarget;
+    const submitBtn = form?.querySelector('button[type="submit"]');
+    if(form && !form.checkValidity()){
+      form.reportValidity();
+      focusFirstInvalid(form);
+      toast('Confira os campos obrigatórios.');
+      return;
+    }
     const items = cartProducts();
     if(!items.length){
       closeModal($('#orderModal'));
@@ -1109,51 +1141,60 @@ function setupCheckout(){
       return;
     }
 
-    const total = cartTotal(items);
-    const order = {
-      code: await getNextOrderCode(),
-      createdAt: new Date().toISOString(),
-      createdAtLabel: nowText(),
-      customer: sanitizeProductText($('#orderName')?.value, 120),
-      phone: digitsOnly($('#orderPhone')?.value).slice(0, 14),
-      deliveryType: sanitizeProductText($('#orderDeliveryType')?.value || 'Entrega', 60),
-      city: sanitizeProductText($('#orderCity')?.value, 100),
-      cep: digitsOnly($('#orderCep')?.value).slice(0, 8),
-      address: sanitizeProductText($('#orderAddress')?.value, 220),
-      payment: sanitizeProductText($('#orderPayment')?.value || 'Pix', 60),
-      note: sanitizeMultilineText($('#orderNote')?.value, 600),
-      items: items.map(i => ({id:sanitizeProductText(i.id,80), name:sanitizeProductText(i.name,160), qty:Math.max(1, Number(i.qty || 1)), price:Number(i.price || 0)})),
-      total,
-      status: ($('#orderPayment')?.value || 'Pix') === 'Pix' ? 'Aguardando pagamento' : 'Aguardando confirmação'
-    };
+    setButtonLoading(submitBtn, true, 'Gerando pedido...');
+    try{
+      const total = cartTotal(items);
+      const order = {
+        code: await getNextOrderCode(),
+        createdAt: new Date().toISOString(),
+        createdAtLabel: nowText(),
+        customer: sanitizeProductText($('#orderName')?.value, 120),
+        phone: digitsOnly($('#orderPhone')?.value).slice(0, 14),
+        deliveryType: sanitizeProductText($('#orderDeliveryType')?.value || 'Entrega', 60),
+        city: sanitizeProductText($('#orderCity')?.value, 100),
+        cep: digitsOnly($('#orderCep')?.value).slice(0, 8),
+        address: sanitizeProductText($('#orderAddress')?.value, 220),
+        payment: sanitizeProductText($('#orderPayment')?.value || 'Pix', 60),
+        note: sanitizeMultilineText($('#orderNote')?.value, 600),
+        items: items.map(i => ({id:sanitizeProductText(i.id,80), name:sanitizeProductText(i.name,160), qty:Math.max(1, Number(i.qty || 1)), price:Number(i.price || 0)})),
+        total,
+        status: ($('#orderPayment')?.value || 'Pix') === 'Pix' ? 'Aguardando pagamento' : 'Aguardando confirmação'
+      };
 
-    if(!order.customer || order.phone.length < 10){
-      toast('Informe nome e WhatsApp válido para concluir.');
-      return;
+      if(!order.customer || order.phone.length < 10){
+        toast('Informe nome e WhatsApp válido para concluir.');
+        $('#orderPhone')?.focus();
+        return;
+      }
+
+      await saveSingleOrder(order);
+      saveCart([]);
+      renderCart();
+      closeModal($('#orderModal'));
+
+      $('#orderDoneCode') && ($('#orderDoneCode').textContent = orderDisplayCode(order.code));
+      const isPixPayment = order.payment === 'Pix';
+      const donePixPanel = $('#orderDonePixPanel');
+      if(donePixPanel) donePixPanel.style.display = isPixPayment ? 'grid' : 'none';
+      if(isPixPayment){
+        $('#orderDonePix') && ($('#orderDonePix').innerHTML = `<strong>Pagamento Pix:</strong> envie o comprovante pelo WhatsApp para confirmar o pedido.`);
+        renderPixBlock({amount:order.total, txid:order.code, qrId:'#pixQrDone', amountId:'#pixAmountDone', payloadId:'#pixPayloadDone', keyId:'#pixKeyDone'});
+      }else{
+        $('#orderDonePix') && ($('#orderDonePix').textContent = 'Pagamento a combinar com a loja. Nossa equipe entrará em contato para orientar a forma de pagamento.');
+        $('#pixQrDone') && ($('#pixQrDone').removeAttribute('src'));
+        $('#pixAmountDone') && ($('#pixAmountDone').textContent = '');
+        $('#pixPayloadDone') && ($('#pixPayloadDone').value = '');
+      }
+      openModal('#orderDoneModal');
+
+      const msg = encodeURIComponent(whatsappOrderMessage(order));
+      window.open(waUrl(CEC_WHATSAPP) + '?text=' + msg, '_blank', 'noopener');
+    }catch(err){
+      console.error('Finalizar pedido:', err);
+      toast('Não foi possível gerar o pedido. Tente novamente.');
+    }finally{
+      setButtonLoading(submitBtn, false);
     }
-
-    saveSingleOrder(order);
-    saveCart([]);
-    renderCart();
-    closeModal($('#orderModal'));
-
-    $('#orderDoneCode') && ($('#orderDoneCode').textContent = orderDisplayCode(order.code));
-    const isPixPayment = order.payment === 'Pix';
-    const donePixPanel = $('#orderDonePixPanel');
-    if(donePixPanel) donePixPanel.style.display = isPixPayment ? 'grid' : 'none';
-    if(isPixPayment){
-      $('#orderDonePix') && ($('#orderDonePix').innerHTML = `<strong>Pagamento Pix:</strong> envie o comprovante pelo WhatsApp para confirmar o pedido.`);
-      renderPixBlock({amount:order.total, txid:order.code, qrId:'#pixQrDone', amountId:'#pixAmountDone', payloadId:'#pixPayloadDone', keyId:'#pixKeyDone'});
-    }else{
-      $('#orderDonePix') && ($('#orderDonePix').textContent = 'Pagamento a combinar com a loja. Nossa equipe entrará em contato para orientar a forma de pagamento.');
-      $('#pixQrDone') && ($('#pixQrDone').removeAttribute('src'));
-      $('#pixAmountDone') && ($('#pixAmountDone').textContent = '');
-      $('#pixPayloadDone') && ($('#pixPayloadDone').value = '');
-    }
-    openModal('#orderDoneModal');
-
-    const msg = encodeURIComponent(whatsappOrderMessage(order));
-    window.open(waUrl(CEC_WHATSAPP) + '?text=' + msg, '_blank', 'noopener');
   });
 
   $('#copyPixPayloadBtn')?.addEventListener('click', () => copyTextValue($('#pixPayloadPreview')?.value || '', 'Pix copiado'));
@@ -1514,6 +1555,7 @@ function saveProductFormV40(event){
   const product = productFromForm();
   if(!product.name || !product.category || !product.price){
     toast('Preencha nome, categoria e preço.');
+    $('#prodName')?.focus();
     return false;
   }
   const list = loadProducts();
@@ -1535,7 +1577,7 @@ function renderAdminProducts(){
     <tr>
       <td>
         <div class="admin-product-row-v79">
-          <img src="${esc(productImage(p))}" alt="">
+          <img src="${esc(productImage(p))}" alt="" loading="lazy" decoding="async">
           <div><strong>${esc(p.name)}</strong><small>${esc([p.brand,p.sku].filter(Boolean).join(' • '))}</small></div>
         </div>
       </td>
@@ -1778,7 +1820,25 @@ async function renderTrackFromQuery(){
 function setupTracking(){
   $('#trackForm')?.addEventListener('submit', async e => {
     e.preventDefault();
-    renderTrack(await findOrderByCodeOnline($('#trackCode')?.value));
+    const form = e.currentTarget;
+    const btn = form?.querySelector('button[type="submit"]');
+    const code = $('#trackCode')?.value;
+    if(!String(code || '').trim()){
+      toast('Informe o código do pedido.');
+      $('#trackCode')?.focus();
+      return;
+    }
+    const box = $('#trackResult');
+    if(box) box.innerHTML = '<div class="card"><strong>Consultando pedido...</strong><p>Aguarde um instante.</p></div>';
+    setButtonLoading(btn, true, 'Consultando...');
+    try{
+      renderTrack(await findOrderByCodeOnline(code));
+    }catch(err){
+      console.error('Consultar pedido:', err);
+      if(box) box.innerHTML = '<div class="card"><strong>Não foi possível consultar agora.</strong><p>Tente novamente ou fale com a loja pelo WhatsApp.</p></div>';
+    }finally{
+      setButtonLoading(btn, false);
+    }
   });
 }
 
