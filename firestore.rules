@@ -1,0 +1,77 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null &&
+             request.auth.uid == "DaCCy3yzZYSpzPOFgODXsLkOD232";
+    }
+
+    function isSafeString(value, max) {
+      return value is string && value.size() <= max;
+    }
+
+    function hasOnlyAllowedKeys(allowed) {
+      return request.resource.data.keys().hasOnly(allowed);
+    }
+
+    // Produtos V2: públicos para leitura; somente admin cadastra, edita ou exclui.
+    match /cec_ecommerce_online/produtos_v2/items/{produtoId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Pedidos completos: cliente cria pedido; somente admin lê/lista/atualiza/exclui.
+    match /cec_ecommerce_online/pedidos_v2/items/{pedidoId} {
+      allow create: if
+        hasOnlyAllowedKeys([
+          'code','createdAt','createdAtLabel','customer','phone','deliveryType','city','cep','address','payment','note','items','total','status','updatedAt','updatedAtMs'
+        ]) &&
+        request.resource.data.code == pedidoId &&
+        isSafeString(request.resource.data.code, 32) &&
+        isSafeString(request.resource.data.customer, 120) &&
+        isSafeString(request.resource.data.phone, 14) &&
+        isSafeString(request.resource.data.address, 220) &&
+        isSafeString(request.resource.data.note, 600) &&
+        request.resource.data.items is list &&
+        request.resource.data.items.size() <= 80 &&
+        request.resource.data.total is number;
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Espelho público para acompanhamento por código, sem telefone/endereço/observações.
+    match /cec_ecommerce_online/pedidos_por_codigo/items/{pedidoId} {
+      allow read: if true;
+      allow create: if
+        hasOnlyAllowedKeys([
+          'code','createdAt','createdAtLabel','customer','deliveryType','payment','items','total','status','updatedAt','updatedAtMs'
+        ]) &&
+        request.resource.data.code == pedidoId &&
+        isSafeString(request.resource.data.code, 32) &&
+        isSafeString(request.resource.data.customer, 120) &&
+        request.resource.data.items is list &&
+        request.resource.data.items.size() <= 80 &&
+        request.resource.data.total is number;
+      allow update, delete: if isAdmin();
+    }
+
+    // Configurações públicas do site; somente admin altera.
+    match /cec_ecommerce_online/configuracoes {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Compatibilidade temporária para ler produtos antigos durante a migração.
+    match /cec_ecommerce_online/produtos {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Bloqueia qualquer outro caminho, incluindo pedidos antigos agregados.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

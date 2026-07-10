@@ -1,4 +1,4 @@
-/* C & C Distribuidora - v79
+/* C & C Distribuidora - v134-security
    Script limpo: remove camadas antigas, estabiliza menu, loja, imagens, carrinho e Firebase.
 */
 'use strict';
@@ -11,6 +11,9 @@ let CEC_PIX_MERCHANT_CITY = 'CAMPO GRANDE';
 
 // Admin v82 usa Firebase Authentication. A senha não fica mais fixa no app.js.
 const FB_COLLECTION = 'cec_ecommerce_online';
+const FB_PRODUCTS_DOC = 'produtos_v2';
+const FB_ORDERS_DOC = 'pedidos_v2';
+const FB_ITEMS_SUBCOLLECTION = 'items';
 
 const CEC_DEFAULT_PRODUCTS = [
   {id:1, name:'Toner Compatível Samsung D204 MLT-D204U', category:'Toner', price:105, tag:'Destaque', stock:12, desc:'Toner compatível para alta produtividade em impressoras Samsung.', image:'assets/img/prod-toner.svg'},
@@ -56,6 +59,38 @@ const CEC_DEFAULT_SITE_CONFIG = {
   deliveryPolicy: 'Realizamos nossas entregas por transportadoras contratadas ou pelos Correios, dependendo do local de entrega. Entregamos para todo o território nacional, todos os produtos disponíveis para venda em nosso site. Não é possível fazer agendamento de data e horário para entregas. O recebimento da mercadoria poderá ser realizado por terceiros, como porteiros de condomínios e familiares, desde que assinem o comprovante de recebimento da mercadoria. O prazo de entrega varia para cada região do país, sendo informado no ato da compra.',
   returnPolicy: 'Oferecemos aos nossos clientes produtos de qualidade, buscando parcerias com os melhores fornecedores nas diversas categorias que comercializamos. Para garantir a satisfação e manter a transparência e respeito com nossos clientes, criamos nossa política de troca e devolução tendo como base o Código de Defesa do Consumidor. As ocorrências que envolvam troca ou devolução devem ser comunicadas à Central de Atendimento ao Cliente através do e-mail de garantia.'
 };
+
+
+
+// Segurança de imagens: evita SVG/data genérico e URLs perigosas no cadastro de produtos.
+const CEC_MAX_IMAGE_UPLOAD_BYTES = 2 * 1024 * 1024;
+const CEC_ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+function isSafeImageDataUrl(value){
+  return /^data:image\/(jpeg|jpg|png|webp);base64,[a-z0-9+/=\s]+$/i.test(String(value || ''));
+}
+function isSafeImageUrl(value){
+  const raw = String(value || '').trim();
+  if(!raw) return '';
+  if(isSafeImageDataUrl(raw)) return raw;
+  if(/^assets\/img\/[a-z0-9._\-\/]+\.(png|jpe?g|webp|svg)$/i.test(raw)) return raw;
+  try{
+    const url = new URL(raw, location.origin);
+    if(!['http:', 'https:'].includes(url.protocol)) return '';
+    if(!/\.(png|jpe?g|webp)(\?.*)?$/i.test(url.pathname + url.search)) return '';
+    return url.href;
+  }catch(e){
+    return '';
+  }
+}
+function sanitizeProductText(value, max=400){
+  return String(value || '').replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+}
+function sanitizeMultilineText(value, max=1200){
+  return String(value || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ').trim().slice(0, max);
+}
+function cleanOrderCode(value){
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9\-]/g, '').slice(0, 32);
+}
 
 const $ = (sel, root=document) => root.querySelector(sel);
 const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
@@ -148,6 +183,66 @@ function db(){
 function fbDoc(name){
   return db()?.collection(FB_COLLECTION).doc(name);
 }
+function isAdminPage(){
+  return /(^|\/)admin(\.html)?$/.test(location.pathname) || location.pathname.includes('/admin');
+}
+function isTrackingPage(){
+  return /(^|\/)acompanhar(\.html)?$/.test(location.pathname) || location.pathname.includes('/acompanhar');
+}
+function fbItemsCollection(docName){
+  if(!db()) return null;
+  return db().collection(FB_COLLECTION).doc(docName).collection(FB_ITEMS_SUBCOLLECTION);
+}
+function fbProductDoc(id){
+  if(!db() || !id) return null;
+  return fbItemsCollection(FB_PRODUCTS_DOC).doc(String(id));
+}
+function fbOrderDoc(code){
+  if(!db() || !code) return null;
+  return fbItemsCollection(FB_ORDERS_DOC).doc(String(code));
+}
+function fbLegacyOrderDoc(code){
+  if(!db() || !code) return null;
+  return db().collection(FB_COLLECTION).doc('pedidos_por_codigo').collection('items').doc(String(code));
+}
+function fbPublicOrderDoc(code){
+  return fbLegacyOrderDoc(code);
+}
+function safeOrderForPublic(order){
+  if(!order) return null;
+  const customer = sanitizeProductText(order.customer, 80);
+  const firstName = customer ? customer.split(/\s+/)[0] : '';
+  return {
+    code: cleanOrderCode(order.code),
+    createdAt: order.createdAt || '',
+    createdAtLabel: order.createdAtLabel || '',
+    customer: firstName,
+    deliveryType: sanitizeProductText(order.deliveryType, 40),
+    payment: sanitizeProductText(order.payment, 40),
+    items: Array.isArray(order.items) ? order.items.map(i => ({id:sanitizeProductText(i.id,80), name:sanitizeProductText(i.name,160), qty:Number(i.qty || 1), price:Number(i.price || 0)})) : [],
+    total: Number(order.total || 0),
+    status: sanitizeProductText(order.status || 'Aguardando confirmação', 40)
+  };
+}
+function adminOrderForStore(order){
+  if(!order) return null;
+  return {
+    code: cleanOrderCode(order.code),
+    createdAt: order.createdAt || new Date().toISOString(),
+    createdAtLabel: sanitizeProductText(order.createdAtLabel || nowText(), 80),
+    customer: sanitizeProductText(order.customer, 120),
+    phone: digitsOnly(order.phone).slice(0, 14),
+    deliveryType: sanitizeProductText(order.deliveryType, 60),
+    city: sanitizeProductText(order.city, 100),
+    cep: digitsOnly(order.cep).slice(0, 8),
+    address: sanitizeProductText(order.address, 220),
+    payment: sanitizeProductText(order.payment, 60),
+    note: sanitizeMultilineText(order.note, 600),
+    items: Array.isArray(order.items) ? order.items.slice(0,80).map(i => ({id:sanitizeProductText(i.id,80), name:sanitizeProductText(i.name,160), qty:Math.max(1, Number(i.qty || 1)), price:Number(i.price || 0)})) : [],
+    total: Number(order.total || 0),
+    status: sanitizeProductText(order.status || 'Aguardando confirmação', 40)
+  };
+}
 function serverTimestamp(){
   try{ return firebase.firestore.FieldValue.serverTimestamp(); }catch(e){ return new Date().toISOString(); }
 }
@@ -168,9 +263,44 @@ function loadProducts(){ return Array.isArray(PRODUCTS) ? PRODUCTS : []; }
 function saveProducts(products){
   PRODUCTS = Array.isArray(products) ? products : [];
   writeJson('cec_products', PRODUCTS);
-  saveDoc('produtos', {items: PRODUCTS});
+  if(isAdminPage()) saveProductsOnline(PRODUCTS);
   renderAllProducts();
   return PRODUCTS;
+}
+async function saveProductsOnline(products){
+  const col = fbItemsCollection(FB_PRODUCTS_DOC);
+  if(!col || !Array.isArray(products)) return false;
+  try{
+    const batch = db().batch();
+    products.forEach(product => {
+      const id = String(product.id || Date.now());
+      batch.set(col.doc(id), {...product, id, updatedAt: serverTimestamp(), updatedAtMs: Date.now()}, {merge:true});
+    });
+    await batch.commit();
+    return true;
+  }catch(e){
+    console.error('Produtos Firebase v2:', e);
+    toast('Não consegui salvar produtos online. Confira o Firebase.');
+    return false;
+  }
+}
+async function saveSingleProductOnline(product){
+  const ref = fbProductDoc(product && product.id);
+  if(!ref) return false;
+  try{
+    await ref.set({...product, id:String(product.id), updatedAt: serverTimestamp(), updatedAtMs: Date.now()}, {merge:true});
+    return true;
+  }catch(e){
+    console.error('Produto Firebase v2:', e);
+    toast('Não consegui salvar o produto online.');
+    return false;
+  }
+}
+async function deleteProductOnline(id){
+  const ref = fbProductDoc(id);
+  if(!ref) return false;
+  try{ await ref.delete(); return true; }
+  catch(e){ console.error('Excluir produto Firebase v2:', e); toast('Não consegui excluir online.'); return false; }
 }
 function loadOrders(){ return Array.isArray(ORDERS) ? ORDERS : []; }
 function saveOrders(orders){
@@ -179,9 +309,27 @@ function saveOrders(orders){
   const index = {};
   ORDERS.forEach(o => { if(o?.code) index[o.code] = o; });
   writeJson('cec_orders_index', index);
-  saveDoc('pedidos', {items: ORDERS});
   renderAdminOrders();
   return ORDERS;
+}
+async function saveSingleOrder(order){
+  const adminOrder = adminOrderForStore(order);
+  const publicOrder = safeOrderForPublic(order);
+  saveOrders([adminOrder, ...loadOrders().filter(o => o.code !== adminOrder.code)]);
+  try{
+    const adminRef = fbOrderDoc(adminOrder.code);
+    if(adminRef){
+      await adminRef.set({...adminOrder, updatedAt: serverTimestamp(), updatedAtMs: Date.now()}, {merge:true});
+    }
+    const publicRef = fbPublicOrderDoc(publicOrder.code);
+    if(publicRef){
+      await publicRef.set({...publicOrder, updatedAt: serverTimestamp(), updatedAtMs: Date.now()}, {merge:true});
+    }
+  }catch(e){
+    console.error('Pedido Firebase:', e);
+    toast('Pedido salvo localmente. Envie pelo WhatsApp para confirmar.');
+  }
+  return adminOrder;
 }
 function loadSiteConfig(){ return {...CEC_DEFAULT_SITE_CONFIG, ...SITE_CONFIG}; }
 function saveSiteConfig(config){
@@ -197,38 +345,53 @@ function saveCart(cart){ writeJson('cec_cart', Array.isArray(cart) ? cart : []);
 function subscribeFirebase(){
   if(!db()) return;
 
-  fbDoc('produtos')?.onSnapshot(snap => {
-    if(!snap.exists){
-      saveDoc('produtos', {items: loadProducts()});
-      return;
-    }
-    const data = snap.data() || {};
-    const items = Array.isArray(data.items) ? data.items : [];
-    if(JSON.stringify(items) === JSON.stringify(PRODUCTS)) return;
-    PRODUCTS = items;
-    writeJson('cec_products', PRODUCTS);
-    preloadProductImages();
-    SHOP_RENDER_KEY = '';
-    renderAllProducts();
-  }, err => console.error('Produtos Firebase:', err));
+  const productsCol = fbItemsCollection(FB_PRODUCTS_DOC);
+  if(productsCol){
+    productsCol.orderBy('name').onSnapshot(snap => {
+      const items = snap.docs.map(docSnap => ({id: docSnap.id, ...(docSnap.data() || {})}));
+      if(items.length){
+        if(JSON.stringify(items) === JSON.stringify(PRODUCTS)) return;
+        PRODUCTS = items;
+        writeJson('cec_products', PRODUCTS);
+        preloadProductImages();
+        SHOP_RENDER_KEY = '';
+        renderAllProducts();
+        renderAdminProducts();
+        return;
+      }
 
-  fbDoc('pedidos')?.onSnapshot(snap => {
-    if(!snap.exists){
-      saveDoc('pedidos', {items: loadOrders()});
-      return;
+      // Fallback temporário: enquanto a migração não for feita, lê o documento antigo
+      // cec_ecommerce_online/produtos com o campo items[].
+      fbDoc('produtos')?.get().then(oldSnap => {
+        const oldData = oldSnap.exists ? (oldSnap.data() || {}) : {};
+        const oldItems = Array.isArray(oldData.items) ? oldData.items : [];
+        if(oldItems.length){
+          PRODUCTS = oldItems;
+          writeJson('cec_products', PRODUCTS);
+          preloadProductImages();
+          SHOP_RENDER_KEY = '';
+          renderAllProducts();
+          renderAdminProducts();
+        }
+      }).catch(err => console.error('Produtos legados Firebase:', err));
+    }, err => console.error('Produtos Firebase v2:', err));
+  }
+
+  if(isAdminPage()){
+    const ordersCol = fbItemsCollection(FB_ORDERS_DOC);
+    if(ordersCol){
+      ordersCol.orderBy('createdAt','desc').onSnapshot(snap => {
+        const items = snap.docs.map(docSnap => ({code: docSnap.id, ...(docSnap.data() || {})})).filter(Boolean);
+        ORDERS = items;
+        writeJson('cec_orders', ORDERS);
+        renderAdminOrders();
+      }, err => console.error('Pedidos Firebase v2:', err));
     }
-    const data = snap.data() || {};
-    const items = Array.isArray(data.items) ? data.items : [];
-    if(JSON.stringify(items) === JSON.stringify(ORDERS)) return;
-    ORDERS = items;
-    writeJson('cec_orders', ORDERS);
-    renderAdminOrders();
-    renderTrackFromQuery();
-  }, err => console.error('Pedidos Firebase:', err));
+  }
 
   fbDoc('configuracoes')?.onSnapshot(snap => {
     if(!snap.exists){
-      saveDoc('configuracoes', {config: loadSiteConfig()});
+      if(isAdminPage()) saveDoc('configuracoes', {config: loadSiteConfig()});
       return;
     }
     const data = snap.data() || {};
@@ -241,7 +404,6 @@ function subscribeFirebase(){
     fillSiteConfigForm();
   }, err => console.error('Config Firebase:', err));
 }
-
 function waUrl(number){
   const n = digitsOnly(number).replace(/^55/,'');
   return 'https://wa.me/55' + n;
@@ -310,9 +472,9 @@ function defaultImageForCategory(category){
 }
 function productImage(product){
   if(!product) return defaultImageForCategory('');
-  if(product.imageData && String(product.imageData).startsWith('data:image/')) return product.imageData;
-  if(product.image && String(product.image).startsWith('data:image/')) return product.image;
-  if(product.image && String(product.image).trim()) return product.image;
+  if(product.imageData && isSafeImageDataUrl(product.imageData)) return product.imageData;
+  const safeImage = isSafeImageUrl(product.image);
+  if(safeImage) return safeImage;
   return defaultImageForCategory(product.category);
 }
 
@@ -383,7 +545,7 @@ async function optimizeLargeProductImages(){
   if(changed){
     PRODUCTS = products;
     writeJson('cec_products', PRODUCTS);
-    saveDoc('produtos', {items: PRODUCTS});
+    saveProductsOnline(PRODUCTS);
     SHOP_RENDER_KEY = '';
     renderShopProducts();
     preloadProductImages();
@@ -820,17 +982,18 @@ function renderPixBlock({amount, txid, qrId, amountId, payloadId, keyId}){
 async function copyTextValue(text, label='Copiado'){
   try{ await navigator.clipboard.writeText(text); toast(label); }catch(e){ toast('Não foi possível copiar.'); }
 }
-function nextOrderNumber(){
-  const maxFromOrders = loadOrders().reduce((max, order) => {
-    const match = String(order.code || '').match(/CEC-(\d+)/);
-    return match ? Math.max(max, Number(match[1])) : max;
-  }, 0);
-  const stored = Number(localStorage.getItem('cec_order_seq') || 0);
-  const next = Math.max(stored, maxFromOrders) + 1;
-  localStorage.setItem('cec_order_seq', String(next));
-  return next;
+function makeCode(){
+  const date = new Date();
+  const ymd = date.toISOString().slice(0,10).replace(/-/g,'');
+  const bytes = new Uint32Array(1);
+  if(window.crypto && window.crypto.getRandomValues){
+    window.crypto.getRandomValues(bytes);
+  }else{
+    bytes[0] = Math.floor(Math.random() * 0xffffffff);
+  }
+  const random = String(bytes[0] % 1000000).padStart(6, '0');
+  return `CEC-${ymd}-${random}`;
 }
-function makeCode(){ return 'CEC-' + String(nextOrderNumber()).padStart(6,'0'); }
 function openCheckout(){
   const items = cartProducts();
   if(!items.length){
@@ -890,20 +1053,25 @@ function setupCheckout(){
       code: makeCode(),
       createdAt: new Date().toISOString(),
       createdAtLabel: nowText(),
-      customer: $('#orderName')?.value.trim() || '',
-      phone: $('#orderPhone')?.value.trim() || '',
-      deliveryType: $('#orderDeliveryType')?.value || 'Entrega',
-      city: $('#orderCity')?.value.trim() || '',
-      cep: $('#orderCep')?.value.trim() || '',
-      address: $('#orderAddress')?.value.trim() || '',
-      payment: $('#orderPayment')?.value || 'Pix',
-      note: $('#orderNote')?.value.trim() || '',
-      items: items.map(i => ({id:i.id, name:i.name, qty:i.qty, price:Number(i.price || 0)})),
+      customer: sanitizeProductText($('#orderName')?.value, 120),
+      phone: digitsOnly($('#orderPhone')?.value).slice(0, 14),
+      deliveryType: sanitizeProductText($('#orderDeliveryType')?.value || 'Entrega', 60),
+      city: sanitizeProductText($('#orderCity')?.value, 100),
+      cep: digitsOnly($('#orderCep')?.value).slice(0, 8),
+      address: sanitizeProductText($('#orderAddress')?.value, 220),
+      payment: sanitizeProductText($('#orderPayment')?.value || 'Pix', 60),
+      note: sanitizeMultilineText($('#orderNote')?.value, 600),
+      items: items.map(i => ({id:sanitizeProductText(i.id,80), name:sanitizeProductText(i.name,160), qty:Math.max(1, Number(i.qty || 1)), price:Number(i.price || 0)})),
       total,
       status: ($('#orderPayment')?.value || 'Pix') === 'Pix' ? 'Aguardando pagamento' : 'Aguardando confirmação'
     };
 
-    saveOrders([order, ...loadOrders()]);
+    if(!order.customer || order.phone.length < 10){
+      toast('Informe nome e WhatsApp válido para concluir.');
+      return;
+    }
+
+    saveSingleOrder(order);
     saveCart([]);
     renderCart();
     closeModal($('#orderModal'));
@@ -1124,24 +1292,26 @@ function setupAdmin(){
 }
 
 function productFromForm(){
-  const id = $('#prodId')?.value || Date.now();
+  const id = sanitizeProductText($('#prodId')?.value || Date.now(), 80);
+  const imageData = $('#prodImageData')?.value || '';
+  const imageUrl = $('#prodImage')?.value || '';
   return {
     id,
-    name: $('#prodName')?.value.trim() || '',
-    category: $('#prodCat')?.value.trim() || '',
-    type: $('#prodType')?.value || '',
-    brand: $('#prodBrand')?.value.trim() || '',
-    sku: $('#prodSku')?.value.trim() || '',
-    color: $('#prodColor')?.value.trim() || '',
+    name: sanitizeProductText($('#prodName')?.value, 180),
+    category: sanitizeProductText($('#prodCat')?.value, 80),
+    type: sanitizeProductText($('#prodType')?.value, 40),
+    brand: sanitizeProductText($('#prodBrand')?.value, 80),
+    sku: sanitizeProductText($('#prodSku')?.value, 80),
+    color: sanitizeProductText($('#prodColor')?.value, 60),
     price: parseMoney($('#prodPrice')?.value),
-    stock: Number($('#prodStock')?.value || 0),
-    tag: $('#prodTag')?.value.trim() || '',
-    yield: $('#prodYield')?.value.trim() || '',
-    image: $('#prodImage')?.value.trim() || '',
-    imageData: $('#prodImageData')?.value || '',
-    desc: $('#prodDesc')?.value.trim() || '',
-    compatiblePrinters: $('#prodPrinters')?.value.trim() || '',
-    notes: $('#prodNotes')?.value.trim() || ''
+    stock: Math.max(0, Number($('#prodStock')?.value || 0)),
+    tag: sanitizeProductText($('#prodTag')?.value, 80),
+    yield: sanitizeProductText($('#prodYield')?.value, 80),
+    image: isSafeImageUrl(imageUrl),
+    imageData: isSafeImageDataUrl(imageData) ? imageData : '',
+    desc: sanitizeMultilineText($('#prodDesc')?.value, 1200),
+    compatiblePrinters: sanitizeMultilineText($('#prodPrinters')?.value, 1200),
+    notes: sanitizeMultilineText($('#prodNotes')?.value, 1200)
   };
 }
 function setProductForm(product={}){
@@ -1173,11 +1343,13 @@ function showProductPreview(src){
   const box = $('#prodImagePreviewBox');
   const img = $('#prodImagePreview');
   const label = $('#prodImagePreviewPath');
-  if(src && img && box){
-    img.src = src;
+  const safeSrc = isSafeImageDataUrl(src) ? src : isSafeImageUrl(src);
+  if(safeSrc && img && box){
+    img.src = safeSrc;
     box.style.display = 'block';
-    label && (label.textContent = String(src).startsWith('data:image/') ? 'Imagem anexada no cadastro' : src);
+    label && (label.textContent = isSafeImageDataUrl(safeSrc) ? 'Imagem anexada no cadastro' : safeSrc);
   }else if(box){
+    if(img) img.removeAttribute('src');
     box.style.display = 'none';
   }
 }
@@ -1186,11 +1358,19 @@ async function resizeImageFile(file){
     const reader = new FileReader();
     reader.onerror = reject;
     reader.onload = () => {
+      if(!isSafeImageDataUrl(reader.result)){
+        reject(new Error('Formato de imagem não permitido.'));
+        return;
+      }
       const img = new Image();
       img.onerror = reject;
       img.onload = () => {
         const max = 420;
         let {width, height} = img;
+        if(!width || !height || width > 6000 || height > 6000){
+          reject(new Error('Dimensões da imagem inválidas.'));
+          return;
+        }
         if(width > max || height > max){
           const ratio = Math.min(max / width, max / height);
           width = Math.round(width * ratio);
@@ -1208,13 +1388,25 @@ async function resizeImageFile(file){
 }
 async function handleProductImageFile(file){
   if(!file) return;
+  if(!CEC_ALLOWED_IMAGE_TYPES.includes(file.type)){
+    toast('Use apenas imagens JPG, PNG ou WEBP. SVG não é aceito.');
+    $('#prodImageFile') && ($('#prodImageFile').value = '');
+    return;
+  }
+  if(file.size > CEC_MAX_IMAGE_UPLOAD_BYTES){
+    toast('Imagem muito grande. Use arquivo de até 2 MB.');
+    $('#prodImageFile') && ($('#prodImageFile').value = '');
+    return;
+  }
   try{
     const data = await resizeImageFile(file);
     $('#prodImageData') && ($('#prodImageData').value = data);
     $('#prodImage') && ($('#prodImage').value = '');
     showProductPreview(data);
   }catch(e){
+    console.error('Imagem produto:', e);
     toast('Não foi possível carregar a imagem.');
+    $('#prodImageFile') && ($('#prodImageFile').value = '');
   }
 }
 function setupProductForm(){
@@ -1245,6 +1437,7 @@ function setupProductForm(){
       const p = findProduct(del.dataset.deleteProductClean);
       if(p && confirm('Excluir o produto "' + p.name + '"?')){
         saveProducts(loadProducts().filter(item => docId(item.id) !== docId(p.id)));
+        deleteProductOnline(p.id);
       }
     }
   });
@@ -1261,6 +1454,7 @@ function saveProductFormV40(event){
   if(idx >= 0) list[idx] = product;
   else list.unshift(product);
   saveProducts(list);
+  saveSingleProductOnline(product);
   clearProductForm();
   $('#productSaveStatusV40') && ($('#productSaveStatusV40').style.display = 'none');
   toast('Produto salvo.');
@@ -1331,7 +1525,7 @@ function setupOrdersAdmin(){
       status: 'Aguardando confirmação',
       note: $('#manualNote')?.value.trim() || ''
     };
-    saveOrders([order, ...loadOrders()]);
+    saveSingleOrder(order);
     e.target.reset();
     toast('Pedido manual criado.');
   });
@@ -1345,6 +1539,10 @@ function setupOrdersAdmin(){
       order.status = select.value;
       order.updatedAt = new Date().toISOString();
       saveOrders(orders);
+      try{
+        fbOrderDoc(order.code)?.set({...adminOrderForStore(order), updatedAt: serverTimestamp(), updatedAtMs: Date.now()}, {merge:true});
+        fbPublicOrderDoc(order.code)?.set({...safeOrderForPublic(order), updatedAt: serverTimestamp(), updatedAtMs: Date.now()}, {merge:true});
+      }catch(err){ console.error('Status Firebase:', err); }
       toast('Status atualizado.');
     }
   });
@@ -1356,6 +1554,10 @@ function setupOrdersAdmin(){
     e.stopImmediatePropagation();
     if(confirm('Excluir o pedido ' + del.dataset.orderDeleteClean + '?')){
       saveOrders(loadOrders().filter(o => o.code !== del.dataset.orderDeleteClean));
+      try{
+        fbOrderDoc(del.dataset.orderDeleteClean)?.delete();
+        fbPublicOrderDoc(del.dataset.orderDeleteClean)?.delete();
+      }catch(err){ console.error('Excluir pedido Firebase:', err); }
     }
   }, true);
 }
@@ -1455,13 +1657,35 @@ function setupBackupAdmin(){
 
 function normalizeCode(code){
   const text = String(code || '').trim().toUpperCase();
+  if(/^CEC-\d{8}-\d{4}$/.test(text)) return text;
   const digits = text.replace(/\D/g,'');
+  if(digits.length > 6) return 'CEC-' + digits;
   if(digits) return 'CEC-' + digits.padStart(6,'0');
   return text;
 }
 function findOrderByCode(code){
   const normalized = normalizeCode(code);
   return loadOrders().find(o => normalizeCode(o.code) === normalized || String(o.code || '').toUpperCase() === String(code || '').toUpperCase()) || null;
+}
+async function findOrderByCodeOnline(code){
+  const local = findOrderByCode(code);
+  if(local) return local;
+  const normalized = normalizeCode(code);
+  try{
+    const publicRef = fbPublicOrderDoc(normalized);
+    if(publicRef){
+      const publicSnap = await publicRef.get();
+      if(publicSnap.exists) return publicSnap.data();
+    }
+    if(isAdminPage()){
+      const ref = fbOrderDoc(normalized);
+      if(ref){
+        const snap = await ref.get();
+        if(snap.exists) return snap.data();
+      }
+    }
+  }catch(e){ console.error('Busca pedido Firebase:', e); }
+  return null;
 }
 function renderTrack(order){
   const box = $('#trackResult');
@@ -1481,14 +1705,14 @@ function renderTrack(order){
       <ul>${(order.items || []).map(i => `<li>${esc(i.name)} x ${i.qty} — ${fmt(Number(i.price||0) * Number(i.qty||1))}</li>`).join('')}</ul>
     </div>`;
 }
-function renderTrackFromQuery(){
+async function renderTrackFromQuery(){
   const code = $('#trackCode')?.value;
-  if(code) renderTrack(findOrderByCode(code));
+  if(code) renderTrack(await findOrderByCodeOnline(code));
 }
 function setupTracking(){
-  $('#trackForm')?.addEventListener('submit', e => {
+  $('#trackForm')?.addEventListener('submit', async e => {
     e.preventDefault();
-    renderTrack(findOrderByCode($('#trackCode')?.value));
+    renderTrack(await findOrderByCodeOnline($('#trackCode')?.value));
   });
 }
 

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Migração Firestore V2 - C&C Distribuidora</title>
+  <style>
+    body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;background:#f6f7f9;color:#172033}
+    .card{background:white;border:1px solid #ddd;border-radius:12px;padding:20px;margin:16px 0;box-shadow:0 4px 18px rgba(0,0,0,.06)}
+    input,button{font:inherit;padding:10px 12px;border-radius:8px;border:1px solid #ccc;margin:4px 0}
+    button{cursor:pointer;background:#1d3557;color:white;border:0}
+    button.secondary{background:#6c757d}
+    pre{background:#101828;color:#e6edf3;padding:16px;border-radius:10px;overflow:auto;white-space:pre-wrap}
+  </style>
+</head>
+<body>
+  <h1>Migração Firestore V2</h1>
+  <div class="card">
+    <p>Use esta página somente uma vez, antes de publicar o site. Ela copia dados antigos para a estrutura nova:</p>
+    <pre>cec_ecommerce_online/produtos_v2/items/{produtoId}
+cec_ecommerce_online/pedidos_v2/items/{codigoPedido}</pre>
+    <p>Ela não apaga os dados antigos.</p>
+  </div>
+
+  <div class="card" id="loginBox">
+    <h2>Login admin</h2>
+    <input id="email" type="email" placeholder="E-mail do admin" autocomplete="username"><br>
+    <input id="password" type="password" placeholder="Senha" autocomplete="current-password"><br>
+    <button id="loginBtn">Entrar</button>
+  </div>
+
+  <div class="card" id="migrationBox" style="display:none">
+    <h2>Migração</h2>
+    <p id="userInfo"></p>
+    <button id="migrateProductsBtn">Migrar produtos antigos para produtos_v2</button>
+    <button id="migrateOrdersBtn">Migrar pedidos antigos para pedidos_v2</button>
+    <button id="logoutBtn" class="secondary">Sair</button>
+  </div>
+
+  <div class="card">
+    <h2>Log</h2>
+    <pre id="log">Aguardando...</pre>
+  </div>
+
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-auth-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script>
+'use strict';
+const ROOT = 'cec_ecommerce_online';
+const PRODUCTS_V2 = 'produtos_v2';
+const ORDERS_V2 = 'pedidos_v2';
+const ITEMS = 'items';
+const db = window.CEC_DB;
+const auth = window.CEC_AUTH;
+const logEl = document.getElementById('log');
+function log(msg){ logEl.textContent += '\n' + msg; }
+function clearLog(msg){ logEl.textContent = msg || ''; }
+function serverTimestamp(){ return firebase.firestore.FieldValue.serverTimestamp(); }
+function sanitizeId(value){
+  return String(value || '').trim().replace(/[\\/#?\[\]]/g,'-').slice(0,120) || String(Date.now());
+}
+function safeOrderForPublic(order){
+  return {
+    code: String(order.code || ''),
+    createdAt: order.createdAt || '',
+    createdAtLabel: order.createdAtLabel || '',
+    customer: order.customer || '',
+    deliveryType: order.deliveryType || '',
+    payment: order.payment || '',
+    items: Array.isArray(order.items) ? order.items.map(i => ({id:i.id || '', name:i.name || '', qty:Number(i.qty || 1), price:Number(i.price || 0)})) : [],
+    total: Number(order.total || 0),
+    status: order.status || 'Aguardando confirmação'
+  };
+}
+function chunk(arr, size){ const out=[]; for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
+
+async function migrateProducts(){
+  clearLog('Migrando produtos...');
+  const legacySnap = await db.collection(ROOT).doc('produtos').get();
+  const legacy = legacySnap.exists ? legacySnap.data() : {};
+  const items = Array.isArray(legacy.items) ? legacy.items : [];
+  if(!items.length){ log('Nenhum produto antigo encontrado em cec_ecommerce_online/produtos.items.'); return; }
+  let count = 0;
+  for(const group of chunk(items, 400)){
+    const batch = db.batch();
+    group.forEach((product, idx) => {
+      const id = sanitizeId(product.id || product.sku || product.name || (Date.now() + '-' + idx));
+      const ref = db.collection(ROOT).doc(PRODUCTS_V2).collection(ITEMS).doc(id);
+      batch.set(ref, {...product, id, migratedAt: serverTimestamp(), updatedAt: serverTimestamp(), updatedAtMs: Date.now()}, {merge:true});
+      count++;
+    });
+    await batch.commit();
+    log('Lote salvo. Total parcial: ' + count);
+  }
+  log('Concluído. Produtos migrados: ' + count);
+}
+
+async function migrateOrders(){
+  clearLog('Migrando pedidos...');
+  let orders = [];
+  const legacySnap = await db.collection(ROOT).doc('pedidos').get();
+  if(legacySnap.exists && Array.isArray((legacySnap.data() || {}).items)) orders = orders.concat(legacySnap.data().items);
+  const legacyByCode = await db.collection(ROOT).doc('pedidos_por_codigo').collection(ITEMS).get();
+  legacyByCode.forEach(docSnap => orders.push({code: docSnap.id, ...(docSnap.data() || {})}));
+  const map = new Map();
+  orders.forEach(o => { if(o && o.code) map.set(String(o.code), o); });
+  orders = Array.from(map.values());
+  if(!orders.length){ log('Nenhum pedido antigo encontrado.'); return; }
+  let count = 0;
+  for(const group of chunk(orders, 400)){
+    const batch = db.batch();
+    group.forEach(order => {
+      const code = sanitizeId(order.code);
+      const ref = db.collection(ROOT).doc(ORDERS_V2).collection(ITEMS).doc(code);
+      const publicRef = db.collection(ROOT).doc('pedidos_por_codigo').collection(ITEMS).doc(code);
+      batch.set(ref, {...order, code, migratedAt: serverTimestamp(), updatedAt: serverTimestamp(), updatedAtMs: Date.now()}, {merge:true});
+      batch.set(publicRef, {...safeOrderForPublic({...order, code}), migratedAt: serverTimestamp(), updatedAt: serverTimestamp(), updatedAtMs: Date.now()}, {merge:true});
+      count++;
+    });
+    await batch.commit();
+    log('Lote salvo. Total parcial: ' + count);
+  }
+  log('Concluído. Pedidos migrados: ' + count);
+}
+
+document.getElementById('loginBtn').onclick = async () => {
+  clearLog('Entrando...');
+  try{ await auth.signInWithEmailAndPassword(document.getElementById('email').value.trim(), document.getElementById('password').value); }
+  catch(e){ clearLog('Erro no login: ' + (e.message || e)); }
+};
+document.getElementById('logoutBtn').onclick = () => auth.signOut();
+document.getElementById('migrateProductsBtn').onclick = () => migrateProducts().catch(e => clearLog('Erro: ' + (e.message || e)));
+document.getElementById('migrateOrdersBtn').onclick = () => migrateOrders().catch(e => clearLog('Erro: ' + (e.message || e)));
+
+auth.onAuthStateChanged(user => {
+  document.getElementById('loginBox').style.display = user ? 'none' : 'block';
+  document.getElementById('migrationBox').style.display = user ? 'block' : 'none';
+  document.getElementById('userInfo').textContent = user ? ('Logado como: ' + user.email) : '';
+  clearLog(user ? 'Login realizado. Escolha o que deseja migrar.' : 'Faça login para migrar.');
+});
+</script>
+</body>
+</html>
