@@ -264,6 +264,8 @@ function adminOrderForStore(order){
     createdAt: order.createdAt || new Date().toISOString(),
     createdAtLabel: sanitizeProductText(order.createdAtLabel || nowText(), 80),
     customer: sanitizeProductText(order.customer, 120),
+    customerUid: sanitizeProductText(order.customerUid, 128),
+    customerEmail: sanitizeProductText(order.customerEmail, 160),
     phone: digitsOnly(order.phone).slice(0, 14),
     deliveryType: sanitizeProductText(order.deliveryType, 60),
     city: sanitizeProductText(order.city, 100),
@@ -1149,6 +1151,8 @@ function setupCheckout(){
         createdAt: new Date().toISOString(),
         createdAtLabel: nowText(),
         customer: sanitizeProductText($('#orderName')?.value, 120),
+        customerUid: (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.uid : '',
+        customerEmail: (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? sanitizeProductText(firebase.auth().currentUser.email || '', 160) : '',
         phone: digitsOnly($('#orderPhone')?.value).slice(0, 14),
         deliveryType: sanitizeProductText($('#orderDeliveryType')?.value || 'Entrega', 60),
         city: sanitizeProductText($('#orderCity')?.value, 100),
@@ -1853,6 +1857,446 @@ function setupCopyButtons(){
   $('#copyPixKeyBtn')?.addEventListener('click', () => copyTextValue(CEC_PIX_KEY_DISPLAY, 'Chave Pix copiada'));
 }
 
+
+function clientAuthMessage(err){
+  const code = String(err?.code || '');
+  const map = {
+    'auth/email-already-in-use':'Este e-mail já possui cadastro.',
+    'auth/invalid-email':'Informe um e-mail válido.',
+    'auth/weak-password':'Use uma senha com pelo menos 6 caracteres.',
+    'auth/invalid-credential':'E-mail ou senha incorretos.',
+    'auth/user-not-found':'Cadastro não encontrado.',
+    'auth/wrong-password':'E-mail ou senha incorretos.',
+    'auth/too-many-requests':'Muitas tentativas. Aguarde e tente novamente.',
+    'auth/network-request-failed':'Falha de conexão. Confira sua internet.',
+    'auth/popup-closed-by-user':'A janela do Google foi fechada antes de concluir.',
+    'auth/popup-blocked':'O navegador bloqueou a janela do Google. Permita pop-ups e tente novamente.',
+    'auth/cancelled-popup-request':'Já existe uma tentativa de login em andamento.',
+    'auth/account-exists-with-different-credential':'Já existe uma conta com este e-mail usando outro método de acesso.',
+    'auth/unauthorized-domain':'Este domínio ainda não foi autorizado no Firebase Authentication.',
+    'auth/requires-recent-login':'Confirme novamente sua identidade para excluir a conta.',
+    'auth/user-mismatch':'A conta usada na confirmação não corresponde à conta conectada.',
+    'auth/user-disabled':'Esta conta foi desativada.',
+    'permission-denied':'O Firebase bloqueou o acesso aos dados da conta. Publique o arquivo firestore.rules desta versão e tente novamente.',
+    'firestore/permission-denied':'O Firebase bloqueou o acesso aos dados da conta. Publique o arquivo firestore.rules desta versão e tente novamente.'
+  };
+  return map[code] || 'Não foi possível concluir. Tente novamente.';
+}
+function clientProfileRef(uid){
+  if(!db() || !uid) return null;
+  return db().collection(FB_COLLECTION).doc('clientes').collection(FB_ITEMS_SUBCOLLECTION).doc(uid);
+}
+function setClientMessage(text, ok=false){
+  const el=$('#clientMessage');
+  if(!el) return;
+  el.textContent=text || '';
+  el.className='client-message' + (ok ? ' ok' : '');
+}
+function setClientButtonLoading(btn, active, text){
+  if(!btn) return;
+  const label=btn.querySelector('[data-client-button-label]');
+  if(active){
+    btn.dataset.clientOriginalLabel=label?.textContent || btn.textContent.trim();
+    if(label) label.textContent=text || 'Aguarde...';
+    btn.classList.add('is-loading');
+    btn.disabled=true;
+    btn.setAttribute('aria-busy','true');
+  }else{
+    if(label && btn.dataset.clientOriginalLabel) label.textContent=btn.dataset.clientOriginalLabel;
+    btn.classList.remove('is-loading');
+    btn.disabled=false;
+    btn.removeAttribute('aria-busy');
+  }
+}
+function renderClientOrderCard(order){
+  const items=Array.isArray(order.items) ? order.items : [];
+  return `<article class="client-order-card">
+    <div class="client-order-head"><strong>${esc(orderDisplayCode(order.code))}</strong><span>${esc(order.status || 'Aguardando confirmação')}</span></div>
+    <p>${esc(order.createdAtLabel || '')}</p>
+    <div class="client-order-items">${items.map(i=>`<span>${esc(i.name)} × ${Math.max(1,Number(i.qty||1))}</span>`).join('')}</div>
+    <div class="client-order-total"><span>${esc(order.deliveryType || '')} · ${esc(order.payment || '')}</span><strong>${fmt(Number(order.total||0))}</strong></div>
+  </article>`;
+}
+async function loadClientProfile(user){
+  const ref=clientProfileRef(user.uid);
+  if(!ref) return;
+  try{
+    const snap=await ref.get();
+    const data=snap.exists ? snap.data() || {} : {};
+    $('#clientName') && ($('#clientName').value=data.name || user.displayName || '');
+    $('#clientEmail') && ($('#clientEmail').value=user.email || data.email || '');
+    $('#clientPhone') && ($('#clientPhone').value=data.phone || '');
+    $('#clientDocument') && ($('#clientDocument').value=data.document || '');
+    $('#clientCep') && ($('#clientCep').value=data.cep || '');
+    $('#clientState') && ($('#clientState').value=data.state || '');
+    $('#clientStreet') && ($('#clientStreet').value=data.street || data.address || '');
+    $('#clientNumber') && ($('#clientNumber').value=data.number || '');
+    $('#clientComplement') && ($('#clientComplement').value=data.complement || '');
+    $('#clientNeighborhood') && ($('#clientNeighborhood').value=data.neighborhood || '');
+    $('#clientCity') && ($('#clientCity').value=data.city || '');
+    $('#clientReference') && ($('#clientReference').value=data.reference || '');
+  }catch(e){
+    console.error('Perfil cliente:',e);
+    throw e;
+  }
+}
+async function loadClientOrders(user){
+  const box=$('#clientOrders');
+  if(!box || !db()) return;
+  box.innerHTML='<div class="card"><strong>Carregando seus pedidos...</strong></div>';
+  try{
+    const snap=await fbItemsCollection(FB_ORDERS_DOC).where('customerUid','==',user.uid).get();
+    const rows=[]; snap.forEach(d=>rows.push({...d.data(), id:d.id}));
+    rows.sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    box.innerHTML=rows.length ? rows.map(renderClientOrderCard).join('') : '<div class="card"><strong>Nenhum pedido vinculado a esta conta.</strong><p>Os próximos pedidos feitos enquanto você estiver conectado aparecerão aqui.</p></div>';
+  }catch(e){
+    console.error('Pedidos cliente:',e);
+    box.innerHTML='<div class="card"><strong>Não foi possível carregar os pedidos.</strong><p>Tente novamente em alguns instantes.</p></div>';
+  }
+}
+function setClientBootLoading(active,text='Carregando sua área...'){
+  const loading=$('#clientBootLoading');
+  if(!loading) return;
+  loading.classList.toggle('hidden',!active);
+  const label=loading.querySelector('span:last-child');
+  if(label) label.textContent=text;
+}
+async function showClientLogged(user){
+  const authBox=$('#clientAuthBox');
+  const areaBox=$('#clientAreaBox');
+  setClientBootLoading(true,'Carregando seus dados...');
+  if(authBox) authBox.classList.add('hidden');
+  if(areaBox) areaBox.classList.remove('hidden');
+  areaBox?.classList.add('is-loading');
+  $('#clientUserEmail') && ($('#clientUserEmail').textContent=user.email || '');
+  const results=await Promise.allSettled([loadClientProfile(user),loadClientOrders(user)]);
+  const failed=results.some(r=>r.status==='rejected');
+  areaBox?.classList.remove('is-loading');
+  setClientBootLoading(false);
+  if(failed) setClientMessage('Algumas informações não puderam ser carregadas. Tente atualizar a página.');
+}
+function showClientLoggedOut(){
+  const authBox=$('#clientAuthBox');
+  const areaBox=$('#clientAreaBox');
+  setClientBootLoading(false);
+  if(authBox) authBox.classList.remove('hidden');
+  if(areaBox) areaBox.classList.add('hidden');
+}
+function setupClientAuthUi(){
+  const login=$('#clientLoginForm');
+  const register=$('#clientRegisterForm');
+  const resetRegisterForm=()=>{
+    register?.reset();
+    register?.querySelectorAll('.is-invalid').forEach(el=>el.classList.remove('is-invalid'));
+  };
+  $('#openRegister')?.addEventListener('click',()=>{
+    resetRegisterForm();
+    $('#clientLoginPassword') && ($('#clientLoginPassword').value='');
+    setClientMessage('');
+    login?.classList.add('is-hidden');
+    register?.classList.add('is-open');
+    $('#clientRegisterName')?.focus();
+  });
+  $('#backToLogin')?.addEventListener('click',()=>{
+    resetRegisterForm();
+    setClientMessage('');
+    register?.classList.remove('is-open');
+    login?.classList.remove('is-hidden');
+    $('#clientLoginPassword') && ($('#clientLoginPassword').value='');
+    $('#clientLoginEmail')?.focus();
+  });
+  $('#clientPasswordToggle')?.addEventListener('click',e=>{
+    const pwd=$('#clientLoginPassword');
+    if(!pwd) return;
+    const show=pwd.type==='password';
+    pwd.type=show?'text':'password';
+    e.currentTarget.setAttribute('aria-label',show?'Ocultar senha':'Mostrar senha');
+    e.currentTarget.textContent=show?'◌':'◉';
+  });
+}
+function userHasProvider(user, providerId){
+  return Array.isArray(user?.providerData) && user.providerData.some(p=>p?.providerId===providerId);
+}
+function withClientTimeout(promise, ms=60000){
+  return Promise.race([
+    promise,
+    new Promise((_,reject)=>setTimeout(()=>reject(Object.assign(new Error('Tempo esgotado.'),{code:'client/timeout'})),ms))
+  ]);
+}
+function requestClientPassword(){
+  const dialog=$('#clientReauthDialog');
+  const form=$('#clientReauthForm');
+  const input=$('#clientReauthPassword');
+  const cancel=$('#clientReauthCancel');
+  const message=$('#clientReauthMessage');
+  if(!dialog || !form || !input) return Promise.reject(Object.assign(new Error('Confirmação indisponível.'),{code:'client/reauth-ui-missing'}));
+  input.value='';
+  if(message) message.textContent='';
+  dialog.showModal();
+  setTimeout(()=>input.focus(),0);
+  return new Promise((resolve,reject)=>{
+    let settled=false;
+    const cleanup=()=>{
+      form.removeEventListener('submit',onSubmit);
+      cancel?.removeEventListener('click',onCancel);
+      dialog.removeEventListener('cancel',onDialogCancel);
+    };
+    const finish=(fn,value)=>{
+      if(settled) return;
+      settled=true;
+      cleanup();
+      try{dialog.close();}catch(_e){}
+      fn(value);
+    };
+    const onSubmit=e=>{
+      e.preventDefault();
+      const password=input.value;
+      if(!password){if(message) message.textContent='Digite sua senha.';input.focus();return;}
+      finish(resolve,password);
+    };
+    const onCancel=()=>finish(reject,Object.assign(new Error('Operação cancelada.'),{code:'client/cancelled'}));
+    const onDialogCancel=e=>{e.preventDefault();onCancel();};
+    form.addEventListener('submit',onSubmit);
+    cancel?.addEventListener('click',onCancel);
+    dialog.addEventListener('cancel',onDialogCancel);
+  });
+}
+async function reauthenticateClientUser(user){
+  if(userHasProvider(user,'google.com')){
+    const provider=new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:'select_account'});
+    await withClientTimeout(user.reauthenticateWithPopup(provider));
+    return;
+  }
+  if(userHasProvider(user,'password')){
+    const password=await requestClientPassword();
+    const credential=firebase.auth.EmailAuthProvider.credential(user.email,password);
+    await withClientTimeout(user.reauthenticateWithCredential(credential));
+    return;
+  }
+  throw Object.assign(new Error('Método de acesso não suportado para reautenticação.'),{code:'client/provider-not-supported'});
+}
+async function deleteClientAccount(auth, btn){
+  const user=auth.currentUser;
+  if(!user){
+    setClientMessage('Sua sessão terminou. Entre novamente para excluir a conta.');
+    return;
+  }
+  if(!confirm('Excluir sua conta e seus dados de cadastro? Seus pedidos permanecerão registrados por obrigação comercial/legal.')) return;
+
+  setClientMessage('');
+  setClientButtonLoading(btn,true,'Confirmando...');
+  try{
+    await reauthenticateClientUser(user);
+
+    // O perfil deve ser removido enquanto o usuário ainda está autenticado.
+    setClientButtonLoading(btn,true,'Excluindo dados...');
+    const profileRef=clientProfileRef(user.uid);
+    if(profileRef){
+      try{
+        await profileRef.delete();
+      }catch(profileErr){
+        console.error('Excluir perfil do cliente:',profileErr);
+        const code=String(profileErr?.code || '');
+        if(code.includes('permission-denied')){
+          throw Object.assign(profileErr,{code:'firestore/permission-denied'});
+        }
+        throw profileErr;
+      }
+    }
+
+    setClientButtonLoading(btn,true,'Excluindo conta...');
+    await user.delete();
+    setClientMessage('Conta excluída com sucesso.',true);
+    showClientLoggedOut();
+  }catch(err){
+    console.error('Excluir conta:',err);
+    const code=String(err?.code || '');
+    if(code==='client/cancelled') setClientMessage('Exclusão cancelada.');
+    else if(code==='client/password-required') setClientMessage('Informe sua senha para confirmar a exclusão.');
+    else if(code==='client/provider-not-supported') setClientMessage('Não foi possível confirmar este método de acesso.');
+    else if(code==='client/timeout') setClientMessage('A confirmação demorou demais. Tente novamente e conclua a janela de autenticação.');
+    else if(code==='client/reauth-ui-missing') setClientMessage('Não foi possível abrir a confirmação de senha. Atualize a página e tente novamente.');
+    else if(code.includes('permission-denied')) setClientMessage('O Firebase bloqueou a exclusão dos dados. Publique o arquivo firestore.rules desta versão e tente novamente.');
+    else if(code.includes('requires-recent-login')) setClientMessage('A confirmação expirou. Clique novamente em Excluir conta e confirme sua identidade.');
+    else setClientMessage(clientAuthMessage(err) + (code ? ' (' + code + ')' : ''));
+  }finally{
+    setClientButtonLoading(btn,false);
+  }
+}
+function setupClientArea(){
+  if(!$('#clientPage')) return;
+  setupClientAuthUi();
+  if(typeof firebase==='undefined' || !firebase.auth){
+    setClientMessage('Firebase Authentication não está disponível.');
+    return;
+  }
+  const auth=firebase.auth();
+  setClientBootLoading(true);
+  $('#clientAuthBox')?.classList.add('hidden');
+  $('#clientAreaBox')?.classList.add('hidden');
+  auth.onAuthStateChanged(
+    user=>{ if(user) showClientLogged(user); else showClientLoggedOut(); },
+    err=>{
+      console.error('Estado de autenticação do cliente:',err);
+      showClientLoggedOut();
+      setClientMessage(clientAuthMessage(err));
+    }
+  );
+
+  $('#clientLoginForm')?.addEventListener('submit',async e=>{
+    e.preventDefault();
+    setClientMessage('');
+    const btn=e.currentTarget.querySelector('button[type="submit"]');
+    setClientButtonLoading(btn,true,'Entrando...');
+    try{
+      await auth.signInWithEmailAndPassword($('#clientLoginEmail').value.trim(),$('#clientLoginPassword').value);
+    }catch(err){
+      setClientMessage(clientAuthMessage(err));
+    }finally{
+      setClientButtonLoading(btn,false);
+    }
+  });
+
+  async function saveGoogleClientProfile(user){
+    if(!user) return;
+    const ref=clientProfileRef(user.uid);
+    if(!ref) return;
+    await ref.set({
+      name:sanitizeProductText(user.displayName || '',120),
+      email:user.email || '',
+      photoURL:sanitizeProductText(user.photoURL || '',500),
+      provider:'google.com',
+      updatedAt:serverTimestamp(),
+      updatedAtMs:Date.now(),
+      lastLoginAt:serverTimestamp()
+    },{merge:true});
+  }
+
+  // Só processa retorno do Google quando esta página realmente iniciou um redirecionamento.
+  if(sessionStorage.getItem('cec_google_redirect_pending')==='1'){
+    auth.getRedirectResult().then(async result=>{
+      sessionStorage.removeItem('cec_google_redirect_pending');
+      if(result?.user){
+        await saveGoogleClientProfile(result.user);
+        setClientMessage('Login com Google realizado com sucesso.',true);
+      }else{
+        showClientLoggedOut();
+      }
+    }).catch(err=>{
+      sessionStorage.removeItem('cec_google_redirect_pending');
+      console.error('Retorno do login Google:',err);
+      showClientLoggedOut();
+      setClientMessage(clientAuthMessage(err));
+    });
+  }
+
+  $('#clientGoogleLogin')?.addEventListener('click',async e=>{
+    const btn=e.currentTarget;
+    setClientMessage('');
+    setClientButtonLoading(btn,true,'Conectando...');
+    const provider=new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:'select_account'});
+    try{
+      const cred=await auth.signInWithPopup(provider);
+      if(cred?.user){
+        await saveGoogleClientProfile(cred.user);
+        setClientMessage('Login com Google realizado com sucesso.',true);
+      }
+    }catch(err){
+      console.error('Login Google:',err);
+      const code=String(err?.code || '');
+      if(['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(code)){
+        setClientMessage('Abrindo o login do Google em uma nova página...');
+        try{
+          sessionStorage.setItem('cec_google_redirect_pending','1');
+          await auth.signInWithRedirect(provider);
+          return;
+        }catch(redirectErr){
+          console.error('Redirecionamento Google:',redirectErr);
+          setClientMessage(clientAuthMessage(redirectErr));
+        }
+      }else{
+        setClientMessage(clientAuthMessage(err));
+      }
+    }finally{
+      setClientButtonLoading(btn,false);
+    }
+  });
+
+  $('#clientRegisterForm')?.addEventListener('submit',async e=>{
+    e.preventDefault();
+    setClientMessage('');
+    const form=e.currentTarget;
+    if(!form.checkValidity()){form.reportValidity();return;}
+    const btn=form.querySelector('button[type="submit"]');
+    setClientButtonLoading(btn,true,'Criando conta...');
+    try{
+      const name=sanitizeProductText($('#clientRegisterName').value,120);
+      const email=$('#clientRegisterEmail').value.trim();
+      const pass=$('#clientRegisterPassword').value;
+      const cred=await auth.createUserWithEmailAndPassword(email,pass);
+      await cred.user.updateProfile({displayName:name});
+      await clientProfileRef(cred.user.uid).set({name,email,provider:'password',createdAt:serverTimestamp(),updatedAt:serverTimestamp(),updatedAtMs:Date.now()},{merge:true});
+      e.currentTarget.reset();
+      setClientMessage('Conta criada com sucesso.',true);
+    }catch(err){
+      setClientMessage(clientAuthMessage(err));
+    }finally{
+      setClientButtonLoading(btn,false);
+    }
+  });
+
+  $('#clientResetPassword')?.addEventListener('click',async()=>{
+    const email=($('#clientLoginEmail')?.value||$('#clientRegisterEmail')?.value||'').trim();
+    if(!email){setClientMessage('Digite seu e-mail para receber o link.');return;}
+    try{
+      await auth.sendPasswordResetEmail(email);
+      setClientMessage('Enviamos o link de redefinição para seu e-mail.',true);
+    }catch(err){
+      setClientMessage(clientAuthMessage(err));
+    }
+  });
+
+  $('#clientLogout')?.addEventListener('click',()=>auth.signOut());
+
+  $('#clientProfileForm')?.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const user=auth.currentUser;
+    if(!user) return;
+    const btn=e.currentTarget.querySelector('button[type="submit"]');
+    setClientButtonLoading(btn,true,'Salvando...');
+    try{
+      const data={
+        name:sanitizeProductText($('#clientName').value,120),
+        email:user.email||'',
+        phone:digitsOnly($('#clientPhone').value).slice(0,14),
+        document:digitsOnly($('#clientDocument').value).slice(0,14),
+        cep:digitsOnly($('#clientCep').value).slice(0,8),
+        state:sanitizeProductText($('#clientState').value,2).toUpperCase(),
+        street:sanitizeProductText($('#clientStreet').value,160),
+        number:sanitizeProductText($('#clientNumber').value,20),
+        complement:sanitizeProductText($('#clientComplement').value,100),
+        neighborhood:sanitizeProductText($('#clientNeighborhood').value,100),
+        city:sanitizeProductText($('#clientCity').value,100),
+        reference:sanitizeProductText($('#clientReference').value,160),
+        updatedAt:serverTimestamp(),
+        updatedAtMs:Date.now()
+      };
+      await clientProfileRef(user.uid).set(data,{merge:true});
+      await user.updateProfile({displayName:data.name});
+      setClientMessage('Dados salvos.',true);
+    }catch(err){
+      console.error('Salvar perfil:',err);
+      setClientMessage('Não foi possível salvar seus dados.');
+    }finally{
+      setClientButtonLoading(btn,false);
+    }
+  });
+
+  $('#clientDeleteAccount')?.addEventListener('click',e=>deleteClientAccount(auth,e.currentTarget));
+}
+
 function boot(){
   applySiteConfig();
   setupMenu();
@@ -1867,6 +2311,7 @@ function boot(){
   setupDeliveryPage();
   setupCopyButtons();
   setupCookies();
+  setupClientArea();
   subscribeFirebase();
 }
 

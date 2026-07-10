@@ -4058,3 +4058,25 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(201,164,91,.18
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}
 }
+
+/* V138 experimental - Área do Cliente */
+.client-page{padding:56px 0 80px;min-height:70vh}.client-auth-grid,.client-dashboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start}.client-form{display:grid;gap:14px}.client-form h2{margin:0 0 4px}.client-message{min-height:24px;margin:12px 0;color:#b42318;font-weight:700}.client-message.ok{color:#157347}.client-account-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}.client-account-bar div{display:grid;gap:4px}.client-orders{display:grid;gap:14px}.client-order-card{background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:18px;box-shadow:0 8px 24px rgba(0,0,0,.06)}.client-order-head,.client-order-total{display:flex;justify-content:space-between;gap:12px;align-items:center}.client-order-head span{background:#f3e7bd;color:#111;padding:6px 10px;border-radius:999px;font-size:.86rem}.client-order-items{display:grid;gap:5px;margin:12px 0}.client-danger{margin-top:6px}.hidden{display:none!important}@media(max-width:760px){.client-auth-grid,.client-dashboard{grid-template-columns:1fr}.client-account-bar{align-items:flex-start;gap:14px;flex-direction:column}.client-order-head,.client-order-total{align-items:flex-start;flex-direction:column}}
+
+
+/* Área do cliente — autenticação Google */
+.client-auth-divider{display:flex;align-items:center;gap:12px;margin:4px 0;color:var(--muted,#777);font-size:.85rem}
+.client-auth-divider::before,.client-auth-divider::after{content:"";height:1px;background:currentColor;opacity:.3;flex:1}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff!important;color:#202124!important;border:1px solid #dadce0!important;box-shadow:0 1px 2px rgba(60,64,67,.15)}
+.btn-google:hover{background:#f8f9fa!important;border-color:#c5c7ca!important}
+.google-g{font-family:Arial,sans-serif;font-weight:700;font-size:1.1rem;color:#4285f4}
+
+/* V138 RC2 Patch 6 — área do cliente estável e perfil ampliado */
+.client-boot-loading{min-height:220px;display:flex;align-items:center;justify-content:center;gap:12px;color:#d9ad63;font-weight:800}
+.client-loader{width:24px;height:24px;border:3px solid rgba(217,173,99,.25);border-top-color:#d9ad63;border-radius:50%;animation:clientSpin .8s linear infinite}
+@keyframes clientSpin{to{transform:rotate(360deg)}}
+#clientAreaBox.is-loading{opacity:.58;pointer-events:none}
+.client-section-head h2{margin:0}.client-section-head p{margin:5px 0 0;color:#aeb8c7;line-height:1.45;font-size:.92rem}
+.client-profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.client-profile-grid .full{grid-column:1/-1}
+.client-profile-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.client-profile-actions .client-danger{margin-top:0;margin-left:auto}
+.client-profile-form input[readonly]{opacity:.78;cursor:not-allowed}
+@media(max-width:760px){.client-profile-grid{grid-template-columns:1fr}.client-profile-grid .full{grid-column:auto}.client-profile-actions{flex-direction:column}.client-profile-actions .btn{width:100%;margin-left:0}}
