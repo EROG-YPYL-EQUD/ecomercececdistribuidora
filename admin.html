@@ -1,221 +1,243 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
-<link crossorigin="" href="https://www.gstatic.com" rel="preconnect"/>
-<link crossorigin="" href="https://firestore.googleapis.com" rel="preconnect"/>
-<meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
-<meta content="no-cache" http-equiv="Pragma"/>
-<meta content="0" http-equiv="Expires"/>
-<meta charset="utf-8">
-<meta content="width=device-width, initial-scale=1.0" name="viewport">
-</meta><title>Painel Restrito | C &amp; C Distribuidora</title><meta content="Painel administrativo restrito da C &amp; C Distribuidora." name="description"/><meta content="noindex,nofollow,noarchive" name="robots"/><link href="https://www.cecdistribuidora.com.br/admin" rel="canonical"/><meta content="pt_BR" property="og:locale"/><meta content="C &amp; C Distribuidora" property="og:site_name"/><meta content="Painel Restrito | C &amp; C Distribuidora" property="og:title"/><meta content="Painel administrativo restrito da C &amp; C Distribuidora." property="og:description"/><meta content="website" property="og:type"/><meta content="https://www.cecdistribuidora.com.br/admin" property="og:url"/><meta content="https://www.cecdistribuidora.com.br/assets/img/logo-cec-dourado.png" property="og:image"/><meta content="Logo da C &amp; C Distribuidora" property="og:image:alt"/><meta content="summary_large_image" name="twitter:card"/><meta content="Painel Restrito | C &amp; C Distribuidora" name="twitter:title"/><meta content="Painel administrativo restrito da C &amp; C Distribuidora." name="twitter:description"/><meta content="https://www.cecdistribuidora.com.br/assets/img/logo-cec-dourado.png" name="twitter:image"/><meta content="Logo da C &amp; C Distribuidora" name="twitter:image:alt"/></meta></head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <meta name="robots" content="noindex,nofollow" />
+ <title>Painel Restrito | C & C Distribuidora</title>
+ <link rel="stylesheet" href="assets/styles.css?v=131" />
+  <link rel="canonical" href="https://www.cecdistribuidora.com.br/admin.html">
+</head>
 <body class="admin-page">
-<div class="admin-shell">
-<div class="admin-head"><div class="admin-title-brand"><img alt="Logo C &amp; C Distribuidora" decoding="async" loading="lazy" src="assets/img/logo-cec-dourado.png"/><div><h1>Painel Restrito</h1><p>Admin separado do site público. Esta página não aparece no menu.</p></div></div><a class="btn btn-outline" href="/">Voltar ao site</a></div>
-<section class="login-box" id="adminLogin">
-<h1>Acesso administrativo</h1>
-<p class="muted-box">Acesso pelo <strong>Firebase Authentication</strong>. Use o e-mail e senha cadastrados no Firebase.</p>
-<form autocomplete="off" id="adminLoginForm">
-<div class="field"><label>E-mail</label><input id="adminEmail" placeholder="seu@email.com" required="" type="email"/></div>
-<div class="field"><label>Senha</label><input id="adminPassword" placeholder="Digite sua senha" required="" type="password"/></div>
-<button class="btn btn-primary" style="width:100%" type="submit">Entrar</button>
-<button class="btn btn-outline" id="resetAdminPasswordBtn" style="width:100%;margin-top:10px" type="button">Esqueci minha senha</button>
-<button class="btn btn-outline" id="clearAdminSessionBtn" style="width:100%;margin-top:10px" type="button">Limpar acesso salvo neste navegador</button>
-<p id="adminLoginError" style="display:none;color:#ff8d8d;font-weight:900;margin-top:12px;text-align:center"></p>
-</form>
-</section>
-<section class="admin-card hidden" id="adminPanel">
-<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px">
-<div><h2 style="margin:0;color:var(--brand)">Admin C &amp; C</h2><p style="margin:4px 0 0;color:var(--muted)">Produtos, pedidos, configurações, SEO básico e dados comerciais.</p><small id="adminLoggedEmail" style="color:var(--muted);font-weight:800"></small></div>
-<button class="btn btn-danger" id="logoutBtn" type="button">Sair</button>
-</div>
-<div class="notice"><strong>Login seguro:</strong> o Admin agora usa e-mail e senha do Firebase Authentication.</div>
-<details class="admin-password-box-v82">
-<summary>Alterar senha do Admin</summary>
-<form autocomplete="off" id="changeAdminPasswordForm">
-<div class="form-grid">
-<div class="field"><label>Senha atual</label><input id="currentAdminPassword" required="" type="password"/></div>
-<div class="field"><label>Nova senha</label><input id="newAdminPassword" minlength="6" required="" type="password"/></div>
-<div class="field"><label>Confirmar nova senha</label><input id="confirmAdminPassword" minlength="6" required="" type="password"/></div>
-</div>
-<button class="btn btn-primary" type="submit">Salvar nova senha</button>
-<p class="admin-auth-msg-v82" id="changeAdminPasswordMsg"></p>
-</form>
-</details>
-<div class="admin-summary-v35">
-<div><strong>Produtos</strong><span>Cadastro completo com preço, descrição, estoque e compatibilidade.</span></div>
-<div><strong>Pedidos</strong><span>Status, visualizar, copiar dados e excluir.</span></div>
-<div><strong>Configurações</strong><span>Contatos, Pix, textos, endereço e SEO básico.</span></div>
-</div>
-<div class="admin-tabs"><button class="tab active" data-tab="productsAdmin" type="button">Produtos</button><button class="tab" data-tab="ordersAdmin" type="button">Pedidos</button><button class="tab" data-tab="siteConfigAdmin" type="button">Configurações do Site</button><button class="tab" data-tab="backupAdmin" type="button">Backup</button></div>
-<div class="admin-section" id="productsAdmin">
-<div class="admin-grid admin-grid-products-v47">
-<div class="card admin-form-card-v47">
-<div class="section-head-v47"><h3 id="productFormTitle">Cadastrar produto</h3><p>Preencha os dados do item e salve para atualizar a loja online.</p></div><p class="image-static-note-v44"><strong>Sincronização online:</strong> o produto salvo aqui aparece na Loja para todos os acessos.</p><p class="image-path-note-v36">Imagens: escolha uma imagem leve ou informe uma URL/caminho. Exemplo: <strong>assets/img/produtos/toner-brother.jpg</strong></p>
-<form class="product-form-v30" id="productForm" novalidate="" onsubmit="return saveProductFormV40(event)">
-<input id="prodId" type="hidden">
-<h4>Informações principais</h4>
-<div class="form-grid">
-<div class="field full"><label>Nome do produto *</label><input id="prodName" placeholder="Ex.: Toner Brother TN-B021 Compatível" required=""/></div>
-<div class="field"><label>Categoria *</label><input id="prodCat" placeholder="Cartucho, Toner, Fotocondutor" required=""/></div>
-<div class="field"><label>Tipo</label><select id="prodType"><option value="Compatível">Compatível</option><option value="Original">Original</option><option value="Remanufaturado">Remanufaturado</option><option value="Sob consulta">Sob consulta</option></select></div>
-<div class="field"><label>Marca</label><input id="prodBrand" placeholder="HP, Brother, Samsung, Canon..."/></div>
-<div class="field"><label>Código / SKU</label><input id="prodSku" placeholder="TN-B021, HP 664XL, D204..."/></div>
-<div class="field"><label>Cor</label><input id="prodColor" placeholder="Preto, Ciano, Magenta, Amarelo..."/></div>
-<div class="field"><label>Preço *</label><input id="prodPrice" placeholder="120,00" required=""/></div>
-<div class="field"><label>Estoque</label><input id="prodStock" min="0" placeholder="0" type="number"/></div>
-<div class="field"><label>Etiqueta</label><input id="prodTag" placeholder="Destaque, HP 664XL..."/></div>
-<div class="field"><label>Rendimento</label><input id="prodYield" placeholder="Ex.: até 2.600 páginas"/></div>
-<div class="field full product-image-path-v36">
-<label>Imagem do produto</label>
-<input id="prodImage" placeholder="assets/img/produtos/nome-da-imagem.jpg ou URL da imagem"/>
-<input id="prodImageData" type="hidden"/>
-<div class="image-tools-v36">
-<label class="btn btn-outline" for="prodImageFile">Escolher imagem</label>
-<input accept="image/jpeg,image/png,image/webp" id="prodImageFile" style="display:none" type="file"/>
-<button class="btn btn-soft" id="previewProductImageBtn" type="button">Pré-visualizar</button>
-<button class="btn btn-outline" id="clearProductImageBtn" type="button">Remover imagem</button>
-</div>
-<small class="path-hint">
+ <div class="admin-shell">
+  <div class="admin-head"><div class="admin-title-brand"><img src="assets/img/logo-cec-dourado.png" alt="Logo C & C Distribuidora"><div><h1>Painel Restrito</h1><p>Admin separado do site público. Esta página não aparece no menu.</p></div></div><a class="btn btn-outline" href="/">Voltar ao site</a></div>
+
+  <section class="login-box" id="adminLogin">
+   <h1>Acesso administrativo</h1>
+   <p class="muted-box">Acesso pelo <strong>Firebase Authentication</strong>. Use o e-mail e senha cadastrados no Firebase.</p>
+   <form id="adminLoginForm" autocomplete="off">
+    <div class="field"><label>E-mail</label><input id="adminEmail" type="email" required placeholder="seu@email.com" /></div>
+    <div class="field"><label>Senha</label><input id="adminPassword" type="password" required placeholder="Digite sua senha" /></div>
+    <button class="btn btn-primary" type="submit" style="width:100%">Entrar</button>
+    <button class="btn btn-outline" id="resetAdminPasswordBtn" type="button" style="width:100%;margin-top:10px">Esqueci minha senha</button>
+    <button class="btn btn-outline" id="clearAdminSessionBtn" type="button" style="width:100%;margin-top:10px">Limpar acesso salvo neste navegador</button>
+    <p id="adminLoginError" style="display:none;color:#ff8d8d;font-weight:900;margin-top:12px;text-align:center"></p>
+   </form>
+  </section>
+
+  <section class="admin-card hidden" id="adminPanel">
+   <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+    <div><h2 style="margin:0;color:var(--brand)">Admin C & C</h2><p style="margin:4px 0 0;color:var(--muted)">Produtos, pedidos, configurações, SEO básico e dados comerciais.</p><small id="adminLoggedEmail" style="color:var(--muted);font-weight:800"></small></div>
+    <button class="btn btn-danger" id="logoutBtn" type="button">Sair</button>
+   </div>
+   <div class="notice"><strong>Login seguro:</strong> o Admin agora usa e-mail e senha do Firebase Authentication.</div>
+   <details class="admin-password-box-v82">
+    <summary>Alterar senha do Admin</summary>
+    <form id="changeAdminPasswordForm" autocomplete="off">
+     <div class="form-grid">
+      <div class="field"><label>Senha atual</label><input id="currentAdminPassword" type="password" required></div>
+      <div class="field"><label>Nova senha</label><input id="newAdminPassword" type="password" required minlength="6"></div>
+      <div class="field"><label>Confirmar nova senha</label><input id="confirmAdminPassword" type="password" required minlength="6"></div>
+     </div>
+     <button class="btn btn-primary" type="submit">Salvar nova senha</button>
+     <p id="changeAdminPasswordMsg" class="admin-auth-msg-v82"></p>
+    </form>
+   </details>
+   <div class="admin-summary-v35">
+     <div><strong>Produtos</strong><span>Cadastro completo com preço, descrição, estoque e compatibilidade.</span></div>
+     <div><strong>Pedidos</strong><span>Status, visualizar, copiar dados e excluir.</span></div>
+     <div><strong>Configurações</strong><span>Contatos, Pix, textos, endereço e SEO básico.</span></div>
+   </div>
+   <div class="admin-tabs"><button class="tab active" data-tab="productsAdmin" type="button">Produtos</button><button class="tab" data-tab="ordersAdmin" type="button">Pedidos</button><button class="tab" data-tab="siteConfigAdmin" type="button">Configurações do Site</button><button class="tab" data-tab="backupAdmin" type="button">Backup</button></div>
+
+   <div class="admin-section" id="productsAdmin">
+    <div class="admin-grid admin-grid-products-v47">
+     <div class="card admin-form-card-v47">
+      <div class="section-head-v47"><h3 id="productFormTitle">Cadastrar produto</h3><p>Preencha os dados do item e salve para atualizar a loja online.</p></div><p class="image-static-note-v44"><strong>Sincronização online:</strong> o produto salvo aqui aparece na Loja para todos os acessos.</p><p class="image-path-note-v36">Imagens: escolha uma imagem leve ou informe uma URL/caminho. Exemplo: <strong>assets/img/produtos/toner-brother.jpg</strong></p>
+      <form id="productForm" class="product-form-v30" novalidate onsubmit="return saveProductFormV40(event)">
+       <input type="hidden" id="prodId" />
+
+       <h4>Informações principais</h4>
+       <div class="form-grid">
+        <div class="field full"><label>Nome do produto *</label><input id="prodName" required placeholder="Ex.: Toner Brother TN-B021 Compatível" /></div>
+        <div class="field"><label>Categoria *</label><input id="prodCat" required placeholder="Cartucho, Toner, Fotocondutor" /></div>
+        <div class="field"><label>Tipo</label><select id="prodType"><option value="Compatível">Compatível</option><option value="Original">Original</option><option value="Remanufaturado">Remanufaturado</option><option value="Sob consulta">Sob consulta</option></select></div>
+        <div class="field"><label>Marca</label><input id="prodBrand" placeholder="HP, Brother, Samsung, Canon..." /></div>
+        <div class="field"><label>Código / SKU</label><input id="prodSku" placeholder="TN-B021, HP 664XL, D204..." /></div>
+        <div class="field"><label>Cor</label><input id="prodColor" placeholder="Preto, Ciano, Magenta, Amarelo..." /></div>
+        <div class="field"><label>Preço *</label><input id="prodPrice" required placeholder="120,00" /></div>
+        <div class="field"><label>Estoque</label><input id="prodStock" type="number" min="0" placeholder="0" /></div>
+        <div class="field"><label>Etiqueta</label><input id="prodTag" placeholder="Destaque, HP 664XL..." /></div>
+        <div class="field"><label>Rendimento</label><input id="prodYield" placeholder="Ex.: até 2.600 páginas" /></div>
+        <div class="field full product-image-path-v36">
+         <label>Imagem do produto</label>
+         <input id="prodImage" placeholder="assets/img/produtos/nome-da-imagem.jpg ou URL da imagem" />
+         <input id="prodImageData" type="hidden" />
+         <div class="image-tools-v36">
+          <label class="btn btn-outline" for="prodImageFile">Escolher imagem</label>
+          <input id="prodImageFile" type="file" accept="image/*" style="display:none">
+          <button class="btn btn-soft" id="previewProductImageBtn" type="button">Pré-visualizar</button>
+          <button class="btn btn-outline" id="clearProductImageBtn" type="button">Remover imagem</button>
+         </div>
+         <small class="path-hint">
           Escolha uma imagem para salvar no cadastro. Ela aparecerá na vitrine e no modal Ver.
          </small>
-<div class="product-image-preview-v36" id="prodImagePreviewBox" style="display:none">
-<img alt="Prévia da imagem do produto" decoding="async" id="prodImagePreview" loading="lazy"/>
-<span id="prodImagePreviewPath"></span>
-</div>
-</div>
-</div>
-<h4>Descrição e compatibilidade</h4>
-<div class="field"><label>Descrição</label><textarea id="prodDesc" placeholder="Descrição do produto, qualidade, uso e informações comerciais"></textarea></div>
-<div class="field"><label>Impressoras compatíveis</label><textarea id="prodPrinters" placeholder="Ex.: Brother HL-B2080DW, DCP-B7535DW, DCP-B7520DW..."></textarea></div>
-<div class="field"><label>Observações</label><textarea id="prodNotes" placeholder="Ex.: confirmar compatibilidade antes da compra, produto sob consulta, garantia..."></textarea></div>
-<div class="product-save-status-v40" id="productSaveStatusV40" style="display:none"></div><div class="actions"><button class="btn btn-primary" id="saveProductBtnV40" type="submit">Salvar produto</button><button class="btn btn-outline" id="clearProductForm" type="button">Limpar</button></div>
-</input></form>
-</div>
-<div class="table-panel-v47">
-<div class="admin-shop-sync-v48 firebase-admin-sync-v74">
-<strong>Sistema online ativo</strong>
-<small>Produtos salvos aqui são enviados para o banco online e aparecem na Loja pública.</small>
-<button class="btn btn-outline" id="firebaseSyncRefreshV74" type="button">Atualizar dados online</button>
-</div>
-<div class="table-panel-head-v47">
-<div>
-<h3>Produtos cadastrados</h3>
-<p>Visual compacto para consultar, editar e excluir sem poluir a tela.</p>
-</div>
-</div>
-<div class="table-wrap product-table-wrap-v47"><table><thead><tr><th>Produto</th><th>Categoria</th><th>Compatibilidade</th><th>Preço</th><th>Estoque</th><th>Ações</th></tr></thead><tbody id="productsBody"></tbody></table></div>
-</div>
-</div>
-</div>
-<div class="admin-section hidden" id="ordersAdmin">
-<div class="orders-sync-note-v43">
-<strong>Pedidos sincronizados online</strong>
-<span>Ao alterar o status aqui, o acompanhamento pelo código é atualizado para o cliente.</span>
-<button class="btn btn-soft" id="refreshOrdersBtnV43" type="button">Atualizar pedidos</button>
-</div>
-<div class="admin-grid">
-<div class="card">
-<h3>Cadastrar pedido manual</h3>
-<p style="color:var(--muted)">Use quando o cliente pedir por telefone/WhatsApp e você quiser registrar no painel.</p>
-<form id="manualOrderForm">
-<div class="field"><label>Cliente</label><input id="manualName" required=""/></div>
-<div class="field"><label>Telefone</label><input id="manualPhone"/></div>
-<div class="field"><label>Total</label><input id="manualTotal" placeholder="120,00" required=""/></div>
-<div class="field"><label>Observação</label><textarea id="manualNote"></textarea></div>
-<button class="btn btn-primary" type="submit">Salvar pedido</button>
-</form>
-</div>
-<div class="table-wrap"><table><thead><tr><th>Código</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Pagamento</th><th>Status</th><th>Ações</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
-</div>
-</div>
-<div class="admin-section hidden" id="siteConfigAdmin">
-<div class="notice"><strong>Configurações do Site:</strong> edite textos, contatos, Pix e SEO básico usados pelo site.</div>
-<form class="card site-config-form-v29" id="siteConfigForm">
-<h3>Dados da empresa</h3>
-<div class="form-grid">
-<div class="field"><label>Nome da empresa</label><input name="companyName"/></div>
-<div class="field"><label>Slogan</label><input name="slogan"/></div>
-<div class="field full"><label>Descrição curta</label><textarea name="shortDescription"></textarea></div>
-<div class="field full"><label>Texto institucional da página inicial</label><textarea name="institutionalText" rows="6"></textarea></div>
-</div>
-<h3>Contatos</h3>
-<div class="form-grid">
-<div class="field"><label>E-mail vendas</label><input name="emailSales"/></div>
-<div class="field"><label>E-mail garantia</label><input name="emailWarranty"/></div>
-<div class="field"><label>WhatsApp principal somente números</label><input name="whatsappMain"/></div>
-<div class="field"><label>WhatsApp principal exibido</label><input name="whatsappMainDisplay"/></div>
-<div class="field"><label>Atendimento somente números</label><input name="whatsappSupport"/></div>
-<div class="field"><label>Atendimento exibido</label><input name="whatsappSupportDisplay"/></div>
-</div>
-<h3>Endereço e funcionamento</h3>
-<div class="form-grid">
-<div class="field"><label>Endereço linha 1</label><input name="addressLine1"/></div>
-<div class="field"><label>Endereço linha 2</label><input name="addressLine2"/></div>
-<div class="field"><label>Cidade/Estado/País</label><input name="cityStateCountry"/></div>
-<div class="field"><label>CNPJ</label><input name="cnpj"/></div>
-<div class="field"><label>Horário semana</label><input name="hoursWeek"/></div>
-<div class="field"><label>Sábado</label><input name="hoursSaturday"/></div>
-<div class="field"><label>Domingo</label><input name="hoursSunday"/></div>
-</div>
-<h3>Pix</h3>
-<div class="form-grid">
-<div class="field"><label>Chave Pix</label><input name="pixKey"/></div>
-<div class="field"><label>Chave Pix exibida</label><input name="pixKeyDisplay"/></div>
-<div class="field"><label>Nome do recebedor</label><input name="pixMerchantName"/></div>
-<div class="field"><label>Cidade Pix</label><input name="pixMerchantCity"/></div>
-</div>
-<h3>Textos das páginas</h3>
-<div class="form-grid">
-<div class="field full"><label>Política de entrega</label><textarea name="deliveryPolicy" rows="5"></textarea></div>
-<div class="field full"><label>Política de trocas/devoluções</label><textarea name="returnPolicy" rows="5"></textarea></div>
-</div>
-<h3>SEO básico</h3>
-<div class="form-grid">
-<div class="field full"><label>Título do Google</label><input name="seoTitle"/></div>
-<div class="field full"><label>Descrição do Google</label><textarea name="seoDescription"></textarea></div>
-<div class="field full"><label>Palavras e frases de busca</label><textarea name="seoKeywords" placeholder="Ex.: toner Campo Grande, cartucho HP Campo Grande, fotocondutor Brother, suprimentos de impressão MS"></textarea></div>
-</div>
-<div class="actions" style="margin-top:18px">
-<button class="btn btn-primary" type="submit">Salvar configurações</button>
-<button class="btn btn-outline" id="resetSiteConfigBtn" type="button">Restaurar padrão</button>
-<button class="btn btn-soft" id="exportSiteConfigBtn" type="button">Exportar configurações</button>
-<label class="btn btn-outline" for="importSiteConfigInput">Importar configurações</label>
-<input accept="application/json" id="importSiteConfigInput" style="display:none" type="file"/>
-</div>
-</form>
-</div>
+         <div class="product-image-preview-v36" id="prodImagePreviewBox" style="display:none">
+          <img id="prodImagePreview" alt="Prévia da imagem do produto">
+          <span id="prodImagePreviewPath"></span>
+         </div>
+        </div>
+       </div>
+
+       <h4>Descrição e compatibilidade</h4>
+       <div class="field"><label>Descrição</label><textarea id="prodDesc" placeholder="Descrição do produto, qualidade, uso e informações comerciais"></textarea></div>
+       <div class="field"><label>Impressoras compatíveis</label><textarea id="prodPrinters" placeholder="Ex.: Brother HL-B2080DW, DCP-B7535DW, DCP-B7520DW..."></textarea></div>
+       <div class="field"><label>Observações</label><textarea id="prodNotes" placeholder="Ex.: confirmar compatibilidade antes da compra, produto sob consulta, garantia..."></textarea></div>
+
+       <div class="product-save-status-v40" id="productSaveStatusV40" style="display:none"></div><div class="actions"><button class="btn btn-primary" id="saveProductBtnV40" type="submit">Salvar produto</button><button class="btn btn-outline" id="clearProductForm" type="button">Limpar</button></div>
+      </form>
+     </div>
+     <div class="table-panel-v47">
+      <div class="admin-shop-sync-v48 firebase-admin-sync-v74">
+       <strong>Sistema online ativo</strong>
+       <small>Produtos salvos aqui são enviados para o banco online e aparecem na Loja pública.</small>
+       <button class="btn btn-outline" id="firebaseSyncRefreshV74" type="button">Atualizar dados online</button>
+      </div>
+      <div class="table-panel-head-v47">
+       <div>
+        <h3>Produtos cadastrados</h3>
+        <p>Visual compacto para consultar, editar e excluir sem poluir a tela.</p>
+       </div>
+      </div>
+      <div class="table-wrap product-table-wrap-v47"><table><thead><tr><th>Produto</th><th>Categoria</th><th>Compatibilidade</th><th>Preço</th><th>Estoque</th><th>Ações</th></tr></thead><tbody id="productsBody"></tbody></table></div>
+     </div>
+    </div>
+   </div>
+
+   <div class="admin-section hidden" id="ordersAdmin">
+    <div class="orders-sync-note-v43">
+     <strong>Pedidos sincronizados online</strong>
+     <span>Ao alterar o status aqui, o acompanhamento pelo código é atualizado para o cliente.</span>
+     <button class="btn btn-soft" id="refreshOrdersBtnV43" type="button">Atualizar pedidos</button>
+    </div>
+    <div class="admin-grid">
+     <div class="card">
+      <h3>Cadastrar pedido manual</h3>
+      <p style="color:var(--muted)">Use quando o cliente pedir por telefone/WhatsApp e você quiser registrar no painel.</p>
+      <form id="manualOrderForm">
+       <div class="field"><label>Cliente</label><input id="manualName" required /></div>
+       <div class="field"><label>Telefone</label><input id="manualPhone" /></div>
+       <div class="field"><label>Total</label><input id="manualTotal" required placeholder="120,00" /></div>
+       <div class="field"><label>Observação</label><textarea id="manualNote"></textarea></div>
+       <button class="btn btn-primary" type="submit">Salvar pedido</button>
+      </form>
+     </div>
+     <div class="table-wrap"><table><thead><tr><th>Código</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Pagamento</th><th>Status</th><th>Ações</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+    </div>
+   </div>
+
+   <div class="admin-section hidden" id="siteConfigAdmin">
+    <div class="notice"><strong>Configurações do Site:</strong> edite textos, contatos, Pix e SEO básico usados pelo site.</div>
+    <form id="siteConfigForm" class="card site-config-form-v29">
+      <h3>Dados da empresa</h3>
+      <div class="form-grid">
+        <div class="field"><label>Nome da empresa</label><input name="companyName"></div>
+        <div class="field"><label>Slogan</label><input name="slogan"></div>
+        <div class="field full"><label>Descrição curta</label><textarea name="shortDescription"></textarea></div>
+        <div class="field full"><label>Texto institucional da página inicial</label><textarea name="institutionalText" rows="6"></textarea></div>
+      </div>
+
+      <h3>Contatos</h3>
+      <div class="form-grid">
+        <div class="field"><label>E-mail vendas</label><input name="emailSales"></div>
+        <div class="field"><label>E-mail garantia</label><input name="emailWarranty"></div>
+        <div class="field"><label>WhatsApp principal somente números</label><input name="whatsappMain"></div>
+        <div class="field"><label>WhatsApp principal exibido</label><input name="whatsappMainDisplay"></div>
+        <div class="field"><label>Atendimento somente números</label><input name="whatsappSupport"></div>
+        <div class="field"><label>Atendimento exibido</label><input name="whatsappSupportDisplay"></div>
+      </div>
+
+      <h3>Endereço e funcionamento</h3>
+      <div class="form-grid">
+        <div class="field"><label>Endereço linha 1</label><input name="addressLine1"></div>
+        <div class="field"><label>Endereço linha 2</label><input name="addressLine2"></div>
+        <div class="field"><label>Cidade/Estado/País</label><input name="cityStateCountry"></div>
+        <div class="field"><label>CNPJ</label><input name="cnpj"></div>
+        <div class="field"><label>Horário semana</label><input name="hoursWeek"></div>
+        <div class="field"><label>Sábado</label><input name="hoursSaturday"></div>
+        <div class="field"><label>Domingo</label><input name="hoursSunday"></div>
+      </div>
+
+      <h3>Pix</h3>
+      <div class="form-grid">
+        <div class="field"><label>Chave Pix</label><input name="pixKey"></div>
+        <div class="field"><label>Chave Pix exibida</label><input name="pixKeyDisplay"></div>
+        <div class="field"><label>Nome do recebedor</label><input name="pixMerchantName"></div>
+        <div class="field"><label>Cidade Pix</label><input name="pixMerchantCity"></div>
+      </div>
+
+      <h3>Textos das páginas</h3>
+      <div class="form-grid">
+        <div class="field full"><label>Política de entrega</label><textarea name="deliveryPolicy" rows="5"></textarea></div>
+        <div class="field full"><label>Política de trocas/devoluções</label><textarea name="returnPolicy" rows="5"></textarea></div>
+      </div>
+
+      <h3>SEO básico</h3>
+      <div class="form-grid">
+        <div class="field full"><label>Título do Google</label><input name="seoTitle"></div>
+        <div class="field full"><label>Descrição do Google</label><textarea name="seoDescription"></textarea></div>
+        <div class="field full"><label>Palavras e frases de busca</label><textarea name="seoKeywords" placeholder="Ex.: toner Campo Grande, cartucho HP Campo Grande, fotocondutor Brother, suprimentos de impressão MS"></textarea></div>
+      </div>
+
+      <div class="actions" style="margin-top:18px">
+        <button class="btn btn-primary" type="submit">Salvar configurações</button>
+        <button class="btn btn-outline" id="resetSiteConfigBtn" type="button">Restaurar padrão</button>
+        <button class="btn btn-soft" id="exportSiteConfigBtn" type="button">Exportar configurações</button>
+        <label class="btn btn-outline" for="importSiteConfigInput">Importar configurações</label>
+        <input id="importSiteConfigInput" type="file" accept="application/json" style="display:none">
+      </div>
+    </form>
+   </div>
+
+   
 <div class="admin-section hidden" id="backupAdmin">
-<div class="backup-grid-v38">
-<div class="card backup-card-v38">
-<div class="backup-icon-v38">⬇</div>
-<h3>Exportar backup</h3>
-<p>Baixe um arquivo com <strong>produtos</strong>, <strong>pedidos</strong> e <strong>configurações</strong> salvos neste navegador.</p>
-<button class="btn btn-primary" id="exportDataBtn" type="button">Baixar backup</button>
-</div>
-<div class="card backup-card-v38">
-<div class="backup-icon-v38">⬆</div>
-<h3>Importar backup</h3>
-<p>Restaure produtos, pedidos e configurações a partir de um arquivo JSON do sistema.</p>
-<div class="backup-upload-v38">
-<input accept="application/json" hidden="" id="importDataInput" type="file">
-<button class="btn btn-outline" id="importDataBtnV37" type="button">Selecionar backup</button>
-<span class="backup-file-name-v38" id="importDataFileName">Nenhum arquivo selecionado</span>
-</input></div>
-<small class="backup-help-v38">Formato aceito: <strong>.json</strong></small>
-</div>
-<div class="card backup-card-v38">
-<div class="backup-icon-v38">↺</div>
-<h3>Restaurar produtos</h3>
-<p>Volte para a lista inicial de produtos demonstrativos do sistema.</p>
-<button class="btn btn-soft" id="resetProductsBtn" type="button">Restaurar produtos</button>
-</div>
-</div>
-</div>
-</section>
-</div>
-<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div class="backup-grid-v38">
+     <div class="card backup-card-v38">
+      <div class="backup-icon-v38">⬇</div>
+      <h3>Exportar backup</h3>
+      <p>Baixe um arquivo com <strong>produtos</strong>, <strong>pedidos</strong> e <strong>configurações</strong> salvos neste navegador.</p>
+      <button class="btn btn-primary" id="exportDataBtn" type="button">Baixar backup</button>
+     </div>
+
+     <div class="card backup-card-v38">
+      <div class="backup-icon-v38">⬆</div>
+      <h3>Importar backup</h3>
+      <p>Restaure produtos, pedidos e configurações a partir de um arquivo JSON do sistema.</p>
+
+      <div class="backup-upload-v38">
+       <input id="importDataInput" type="file" accept="application/json" hidden />
+       <button class="btn btn-outline" id="importDataBtnV37" type="button">Selecionar backup</button>
+       <span class="backup-file-name-v38" id="importDataFileName">Nenhum arquivo selecionado</span>
+      </div>
+
+      <small class="backup-help-v38">Formato aceito: <strong>.json</strong></small>
+     </div>
+
+     <div class="card backup-card-v38">
+      <div class="backup-icon-v38">↺</div>
+      <h3>Restaurar produtos</h3>
+      <p>Volte para a lista inicial de produtos demonstrativos do sistema.</p>
+      <button class="btn btn-soft" id="resetProductsBtn" type="button">Restaurar produtos</button>
+     </div>
+    </div>
+   </div>
+  </section>
+ </div>
+ <div class="toast" id="toast"></div>
+
 <script>
 /* V126 - Admin sem login fallback antigo */
 (function(){
@@ -265,12 +287,14 @@
   }
 })();
 </script>
+
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-analytics-compat.js"></script>
 <script src="assets/firebase-config.js"></script>
-<script src="assets/app.js?v=135-perf"></script>
+<script src="assets/app.js?v=131"></script>
+
 <script>
 /* ADMIN_ORDERS_FALLBACK_V35 */
 (function(){
@@ -295,6 +319,8 @@
   });
 })();
 </script>
+
+
 <script>
 /* ADMIN_BACKUP_FALLBACK_V37 */
 (function(){
@@ -348,5 +374,6 @@
   }, true);
 })();
 </script>
+
 </body>
 </html>
