@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Limpar acompanhamento público | C&C</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:24px;color:#171717}.box{max-width:680px;margin:auto;background:#fff;padding:24px;border-radius:14px;box-shadow:0 8px 30px #0001}label{display:block;margin:12px 0 5px;font-weight:700}input,button{width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:1px solid #ccc}button{margin-top:14px;background:#111;color:#fff;border:0;font-weight:700;cursor:pointer}button:disabled{opacity:.55;cursor:wait}.status{margin-top:16px;padding:12px;background:#f2f2f2;border-radius:8px;white-space:pre-wrap}.warn{background:#fff5d6;padding:12px;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>Limpar acompanhamento público</h1>
+<p class="warn"><strong>Use uma única vez após publicar as novas regras.</strong> Esta ferramenta remove dos espelhos públicos nome, produtos, preços, total e forma de pagamento. Os pedidos completos continuam preservados na área administrativa.</p>
+<div id="loginBox">
+<label for="email">E-mail do administrador</label><input id="email" type="email" autocomplete="username">
+<label for="password">Senha</label><input id="password" type="password" autocomplete="current-password">
+<button id="loginBtn">Entrar como administrador</button>
+</div>
+<button id="cleanBtn" hidden>Limpar documentos públicos existentes</button>
+<div class="status" id="status">Aguardando login.</div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script>
+'use strict';
+const ADMIN_UID='DaCCy3yzZYSpzPOFgODXsLkOD232';
+const statusEl=document.getElementById('status');
+const loginBtn=document.getElementById('loginBtn');
+const cleanBtn=document.getElementById('cleanBtn');
+function setStatus(t){statusEl.textContent=t;}
+loginBtn.addEventListener('click',async()=>{
+  loginBtn.disabled=true;
+  try{
+    const cred=await firebase.auth().signInWithEmailAndPassword(document.getElementById('email').value.trim(),document.getElementById('password').value);
+    if(!cred.user || cred.user.uid!==ADMIN_UID){await firebase.auth().signOut();throw new Error('Esta conta não é o administrador autorizado.');}
+    document.getElementById('loginBox').hidden=true;cleanBtn.hidden=false;setStatus('Administrador autenticado. Clique no botão para iniciar a limpeza.');
+  }catch(e){setStatus('Erro: '+(e.message||e));}
+  finally{loginBtn.disabled=false;}
+});
+cleanBtn.addEventListener('click',async()=>{
+  if(!confirm('Confirma a remoção dos dados detalhados dos documentos públicos?'))return;
+  cleanBtn.disabled=true;setStatus('Lendo pedidos públicos...');
+  try{
+    const col=firebase.firestore().collection('cec_ecommerce_online').doc('pedidos_por_codigo').collection('items');
+    const snap=await col.get();
+    let processed=0;let batch=firebase.firestore().batch();let inBatch=0;
+    for(const doc of snap.docs){
+      const d=doc.data()||{};
+      const clean={
+        code:String(d.code||doc.id).replace(/^CEC-/i,''),
+        createdAt:d.createdAt||'',
+        createdAtLabel:String(d.createdAtLabel||'').slice(0,80),
+        deliveryType:String(d.deliveryType||'').slice(0,40),
+        status:String(d.status||'Aguardando confirmação').slice(0,40),
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAtMs:Date.now()
+      };
+      batch.set(doc.ref,clean);
+      processed++;inBatch++;
+      if(inBatch===400){await batch.commit();batch=firebase.firestore().batch();inBatch=0;setStatus('Processados: '+processed);}
+    }
+    if(inBatch)await batch.commit();
+    setStatus('Concluído. '+processed+' documento(s) público(s) foram reduzidos aos dados mínimos. Agora exclua este arquivo do site publicado.');
+  }catch(e){setStatus('Erro: '+(e.message||e));}
+  finally{cleanBtn.disabled=false;}
+});
+</script>
+</body>
+</html>

@@ -38,26 +38,29 @@ service cloud.firestore {
         isSafeString(request.resource.data.address, 220) &&
         isSafeString(request.resource.data.note, 600) &&
         request.resource.data.items is list &&
-        request.resource.data.items.size() <= 80 &&
-        request.resource.data.total is number;
+        request.resource.data.items.size() > 0 &&
+        request.resource.data.items.size() <= 20 &&
+        request.resource.data.total is number &&
+        request.resource.data.total >= 0 &&
+        request.resource.data.status in ['Aguardando pagamento', 'Aguardando confirmação'];
 
       allow read: if isAdmin() || (request.auth != null && resource.data.customerUid == request.auth.uid);
       allow update, delete: if isAdmin();
     }
 
-    // Espelho público para acompanhamento por código, sem telefone/endereço/observações.
+    // Espelho público mínimo para acompanhamento por código.
+    // Não armazena nome, telefone, endereço, produtos, preços, total ou pagamento.
     match /cec_ecommerce_online/pedidos_por_codigo/items/{pedidoId} {
       allow read: if true;
       allow create: if
         hasOnlyAllowedKeys([
-          'code','createdAt','createdAtLabel','customer','deliveryType','payment','items','total','status','updatedAt','updatedAtMs'
+          'code','createdAt','createdAtLabel','deliveryType','status','updatedAt','updatedAtMs'
         ]) &&
         request.resource.data.code == pedidoId &&
         isSafeString(request.resource.data.code, 32) &&
-        isSafeString(request.resource.data.customer, 120) &&
-        request.resource.data.items is list &&
-        request.resource.data.items.size() <= 80 &&
-        request.resource.data.total is number;
+        isSafeString(request.resource.data.createdAtLabel, 80) &&
+        isSafeString(request.resource.data.deliveryType, 40) &&
+        request.resource.data.status in ['Aguardando pagamento', 'Aguardando confirmação'];
       allow update, delete: if isAdmin();
     }
 

@@ -15,6 +15,8 @@ const FB_PRODUCTS_DOC = 'produtos_v2';
 const FB_ORDERS_DOC = 'pedidos_v2';
 const FB_ITEMS_SUBCOLLECTION = 'items';
 const FB_ORDER_COUNTER_DOC = 'contador_pedidos';
+const CEC_MAX_DISTINCT_CART_ITEMS = 20;
+const CEC_MAX_QTY_PER_PRODUCT = 10;
 
 const CEC_DEFAULT_PRODUCTS = [
   {id:1, name:'Toner Compatível Samsung D204 MLT-D204U', category:'Toner', price:105, tag:'Destaque', stock:12, desc:'Toner compatível para alta produtividade em impressoras Samsung.', image:'assets/img/prod-toner.svg'},
@@ -243,17 +245,11 @@ function fbPublicOrderDoc(code){
 }
 function safeOrderForPublic(order){
   if(!order) return null;
-  const customer = sanitizeProductText(order.customer, 80);
-  const firstName = customer ? customer.split(/\s+/)[0] : '';
   return {
     code: cleanOrderCode(order.code),
     createdAt: order.createdAt || '',
-    createdAtLabel: order.createdAtLabel || '',
-    customer: firstName,
+    createdAtLabel: sanitizeProductText(order.createdAtLabel || '', 80),
     deliveryType: sanitizeProductText(order.deliveryType, 40),
-    payment: sanitizeProductText(order.payment, 40),
-    items: Array.isArray(order.items) ? order.items.map(i => ({id:sanitizeProductText(i.id,80), name:sanitizeProductText(i.name,160), qty:Number(i.qty || 1), price:Number(i.price || 0)})) : [],
-    total: Number(order.total || 0),
     status: sanitizeProductText(order.status || 'Aguardando confirmação', 40)
   };
 }
@@ -273,7 +269,7 @@ function adminOrderForStore(order){
     address: sanitizeProductText(order.address, 220),
     payment: sanitizeProductText(order.payment, 60),
     note: sanitizeMultilineText(order.note, 600),
-    items: Array.isArray(order.items) ? order.items.slice(0,80).map(i => ({id:sanitizeProductText(i.id,80), name:sanitizeProductText(i.name,160), qty:Math.max(1, Number(i.qty || 1)), price:Number(i.price || 0)})) : [],
+    items: Array.isArray(order.items) ? order.items.slice(0, CEC_MAX_DISTINCT_CART_ITEMS).map(i => ({id:sanitizeProductText(i.id,80), name:sanitizeProductText(i.name,160), qty:Math.min(CEC_MAX_QTY_PER_PRODUCT, Math.max(1, Number(i.qty || 1))), price:Number(i.price || 0)})) : [],
     total: Number(order.total || 0),
     status: sanitizeProductText(order.status || 'Aguardando confirmação', 40)
   };
@@ -358,7 +354,7 @@ async function saveSingleOrder(order){
     }
     const publicRef = fbPublicOrderDoc(publicOrder.code);
     if(publicRef){
-      await publicRef.set({...publicOrder, updatedAt: serverTimestamp(), updatedAtMs: Date.now()}, {merge:true});
+      await publicRef.set({...publicOrder, updatedAt: serverTimestamp(), updatedAtMs: Date.now()});
     }
   }catch(e){
     console.error('Pedido Firebase:', e);
@@ -681,7 +677,7 @@ function shopCard(product){
         <strong class="card-price-v67 card-price-v73">${fmt(product.price)}</strong>
         <div class="card-actions-v67 card-actions-v73">
           <div class="card-actions-top-v67 card-actions-top-v73">
-            <input class="card-qty-v67 card-qty-v73" type="number" min="1" value="1" data-card-qty="${esc(product.id)}" aria-label="Quantidade">
+            <input class="card-qty-v67 card-qty-v73" type="number" min="1" max="10" value="1" data-card-qty="${esc(product.id)}" aria-label="Quantidade">
             <button class="btn btn-outline" type="button" data-view-product="${esc(product.id)}">Ver</button>
           </div>
           <button class="btn btn-primary card-add-v67 card-add-v73" type="button" data-add-product="${esc(product.id)}">Adicionar</button>
@@ -871,7 +867,7 @@ function renderCart(){
       </div>
       <div class="cart-line-actions-v71">
         <button class="btn btn-outline" type="button" data-cart-minus="${esc(item.id)}">-</button>
-        <input type="number" min="1" value="${item.qty}" data-cart-qty="${esc(item.id)}">
+        <input type="number" min="1" max="10" value="${item.qty}" data-cart-qty="${esc(item.id)}">
         <button class="btn btn-outline" type="button" data-cart-plus="${esc(item.id)}">+</button>
         <button class="btn btn-danger" type="button" data-cart-remove="${esc(item.id)}">Remover</button>
       </div>
@@ -903,8 +899,17 @@ function addProductToCart(id, qty=1){
   }
   const cart = loadCart();
   const found = cart.find(item => docId(item.id) === docId(id));
-  if(found) found.qty = Number(found.qty || 0) + Math.max(1, Number(qty || 1));
-  else cart.push({id:p.id, qty:Math.max(1, Number(qty || 1)), name:p.name, price:Number(p.price || 0)});
+  if(found){
+    const nextQty = Math.min(CEC_MAX_QTY_PER_PRODUCT, Number(found.qty || 0) + Math.max(1, Number(qty || 1)));
+    found.qty = nextQty;
+    if(nextQty >= CEC_MAX_QTY_PER_PRODUCT) toast(`Limite de ${CEC_MAX_QTY_PER_PRODUCT} unidades por produto.`);
+  }else{
+    if(cart.length >= CEC_MAX_DISTINCT_CART_ITEMS){
+      toast(`O carrinho aceita até ${CEC_MAX_DISTINCT_CART_ITEMS} produtos diferentes.`);
+      return;
+    }
+    cart.push({id:p.id, qty:Math.min(CEC_MAX_QTY_PER_PRODUCT, Math.max(1, Number(qty || 1))), name:p.name, price:Number(p.price || 0)});
+  }
   saveCart(cart);
   renderCart();
   toast('Produto adicionado ao carrinho');
@@ -912,7 +917,7 @@ function addProductToCart(id, qty=1){
 function changeCartQty(id, qty){
   const cart = loadCart();
   const item = cart.find(i => docId(i.id) === docId(id));
-  if(item) item.qty = Math.max(1, Number(qty || 1));
+  if(item) item.qty = Math.min(CEC_MAX_QTY_PER_PRODUCT, Math.max(1, Number(qty || 1)));
   saveCart(cart);
   renderCart();
 }
@@ -1166,6 +1171,14 @@ function setupCheckout(){
       openCart();
       return;
     }
+    if(items.length > CEC_MAX_DISTINCT_CART_ITEMS){
+      toast(`O pedido aceita até ${CEC_MAX_DISTINCT_CART_ITEMS} produtos diferentes.`);
+      return;
+    }
+    if(items.some(item => !Number.isInteger(Number(item.qty)) || Number(item.qty) < 1 || Number(item.qty) > CEC_MAX_QTY_PER_PRODUCT)){
+      toast(`Cada produto deve ter entre 1 e ${CEC_MAX_QTY_PER_PRODUCT} unidades.`);
+      return;
+    }
 
     setButtonLoading(submitBtn, true, 'Gerando pedido...');
     try{
@@ -1185,7 +1198,7 @@ function setupCheckout(){
         addressId: sanitizeProductText($('#orderSavedAddress')?.value || '',80),
         payment: sanitizeProductText($('#orderPayment')?.value || 'Pix', 60),
         note: sanitizeMultilineText($('#orderNote')?.value, 600),
-        items: items.map(i => ({id:sanitizeProductText(i.id,80), name:sanitizeProductText(i.name,160), qty:Math.max(1, Number(i.qty || 1)), price:Number(i.price || 0)})),
+        items: items.slice(0, CEC_MAX_DISTINCT_CART_ITEMS).map(i => ({id:sanitizeProductText(i.id,80), name:sanitizeProductText(i.name,160), qty:Math.min(CEC_MAX_QTY_PER_PRODUCT, Math.max(1, Number(i.qty || 1))), price:Number(i.price || 0)})),
         total,
         status: ($('#orderPayment')?.value || 'Pix') === 'Pix' ? 'Aguardando pagamento' : 'Aguardando confirmação'
       };
@@ -1679,7 +1692,7 @@ function setupOrdersAdmin(){
       saveOrders(orders);
       try{
         fbOrderDoc(order.code)?.set({...adminOrderForStore(order), updatedAt: serverTimestamp(), updatedAtMs: Date.now()}, {merge:true});
-        fbPublicOrderDoc(order.code)?.set({...safeOrderForPublic(order), updatedAt: serverTimestamp(), updatedAtMs: Date.now()}, {merge:true});
+        fbPublicOrderDoc(order.code)?.set({...safeOrderForPublic(order), updatedAt: serverTimestamp(), updatedAtMs: Date.now()});
       }catch(err){ console.error('Status Firebase:', err); }
       toast('Status atualizado.');
     }
@@ -1833,13 +1846,11 @@ function renderTrack(order){
   }
   box.innerHTML = `
     <div class="card">
-      <h2>${esc(order.code)}</h2>
+      <h2>${esc(orderDisplayCode(order.code))}</h2>
       <p><strong>Status:</strong> <span class="status ${statusClass(order.status)}">${esc(order.status || 'Aguardando confirmação')}</span></p>
-      <p><strong>Cliente:</strong> ${esc(order.customer || '')}</p>
-      <p><strong>Total:</strong> ${fmt(order.total)}</p>
       <p><strong>Data:</strong> ${esc(order.createdAtLabel || '')}</p>
-      <h3>Itens</h3>
-      <ul>${(order.items || []).map(i => `<li>${esc(i.name)} x ${i.qty} — ${fmt(Number(i.price||0) * Number(i.qty||1))}</li>`).join('')}</ul>
+      <p><strong>Entrega:</strong> ${esc(order.deliveryType || 'A confirmar')}</p>
+      <p class="muted">Por privacidade, produtos, valores e dados pessoais aparecem somente na área do cliente autenticado.</p>
     </div>`;
 }
 async function renderTrackFromQuery(){
